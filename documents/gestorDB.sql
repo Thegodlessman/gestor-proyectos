@@ -327,6 +327,18 @@ CREATE TRIGGER trg_actualizar_fecha_rol_permisos
 BEFORE UPDATE ON rol_permisos
 FOR EACH ROW EXECUTE FUNCTION fn_actualizar_fecha_modificacion();
 
+-- Tabla de sesiones 
+CREATE TABLE "session" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL
+)
+WITH (OIDS=FALSE);
+
+ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE INDEX "IDX_session_expire" ON "session" ("expire");
+
 -- Índices adicionales
 CREATE INDEX idx_usuarios_email ON usuarios(email);
 CREATE INDEX idx_proyectos_nombre ON proyectos(nombre_proyecto);
