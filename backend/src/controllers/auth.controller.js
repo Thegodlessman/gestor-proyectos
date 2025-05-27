@@ -32,7 +32,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({
             message: 'Inicio de sesión exitoso.',
-            usuario: req.session.usuario 
+            usuario: req.session.usuario
         });
 
     } catch (error) {
@@ -46,7 +46,7 @@ export const logout = (req, res) => {
         if (err) {
             return res.status(500).json({ message: 'No se pudo cerrar la sesión.' });
         }
-        res.clearCookie('connect.sid'); 
+        res.clearCookie('connect.sid');
         res.status(200).json({ message: 'Sesión cerrada exitosamente.' });
     });
 };
@@ -66,3 +66,56 @@ export const verificarSesion = (req, res) => {
         });
     }
 };
+
+export const register = async (req, res) => {
+    const { nombre_completo, email, password } = req.body;
+
+    if (!nombre_completo || !email || !password) {
+        return res.status(400).json({ message: 'Todos los campos (nombre, email, contraseña) son requeridos.' });
+    }
+
+    try {
+        const userExistsQuery = 'SELECT email FROM usuarios WHERE email = $1';
+        const existingUser = await pool.query(userExistsQuery, [email]);
+
+        if (existingUser.rows.length > 0) {
+            return res.status(409).json({ message: 'El correo electrónico ya está en uso.' }); // 409 Conflict
+        }
+
+        const defaultRoleQuery = "SELECT id FROM roles WHERE nombre_rol = 'Miembro de Equipo'";
+        const roleResult = await pool.query(defaultRoleQuery);
+
+        if (roleResult.rows.length === 0) {
+            console.error("Error crítico: El rol por defecto 'Miembro de Equipo' no se encuentra en la base de datos.");
+            return res.status(500).json({ message: 'Error de configuración del servidor.' });
+        }
+        const defaultRoleId = roleResult.rows[0].id;
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const insertUserQuery = `
+        INSERT INTO usuarios (nombre_completo, email, password_hash, rol_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, nombre_completo, email, rol_id
+      `;
+        const newUserResult = await pool.query(insertUserQuery, [nombre_completo, email, passwordHash, defaultRoleId]);
+        const nuevoUsuario = newUserResult.rows[0];
+
+        req.session.usuario = {
+            id: nuevoUsuario.id,
+            nombre: nuevoUsuario.nombre_completo,
+            email: nuevoUsuario.email,
+            rol_id: nuevoUsuario.rol_id,
+        };
+
+        res.status(201).json({ 
+            message: 'Usuario registrado e sesión iniciada exitosamente.',
+            usuario: req.session.usuario
+        });
+
+    } catch (error) {
+        console.error('Error en el proceso de registro:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+}
