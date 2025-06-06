@@ -4,6 +4,7 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import db from './src/config/db.js'; 
 import authRoutes from './src/routes/auth.routes.js';
+import securityRoutes from './src/routes/security.routes.js';
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.get('/api', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/security', securityRoutes); 
 
 const PORT = process.env.PORT || 3001;
 
