@@ -23,13 +23,13 @@ const sessionStore = new PgStore({
 });
 
 app.use(session({
-    store: sessionStore, // Le decimos a express-session que use nuestro almacén de PG
-    secret: process.env.SESSION_SECRET, // ¡Añade esta variable a tu .env! Es para firmar el ID de la cookie
+    store: sessionStore, // Le decimos a express-session que use almacén de PG
+    secret: process.env.SESSION_SECRET,
     resave: false, // No guardar la sesión si no ha cambiado
     saveUninitialized: false, // No crear sesión para usuarios que no han iniciado sesión
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // Duración de la cookie (ej. 1 día)
-        secure: process.env.NODE_ENV === 'production', // true en producción (solo HTTPS)
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24, // Duración de la cookie
         httpOnly: true, // La cookie no es accesible desde JavaScript en el frontend
     }
 }));
@@ -44,5 +44,5 @@ app.use('/api/auth', authRoutes);
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-    console.log(`Servidor backend (Sesiones) corriendo en http://localhost:${PORT}`);
+    console.log(`Server backend on port ${PORT}`);
 });

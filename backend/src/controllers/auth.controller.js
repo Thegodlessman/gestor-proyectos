@@ -76,14 +76,14 @@ export const register = async (req, res) => {
 
     try {
         const userExistsQuery = 'SELECT email FROM usuarios WHERE email = $1';
-        const existingUser = await pool.query(userExistsQuery, [email]);
+        const existingUser = await db.query(userExistsQuery, [email]);
 
         if (existingUser.rows.length > 0) {
             return res.status(409).json({ message: 'El correo electrónico ya está en uso.' }); // 409 Conflict
         }
 
         const defaultRoleQuery = "SELECT id FROM roles WHERE nombre_rol = 'Miembro de Equipo'";
-        const roleResult = await pool.query(defaultRoleQuery);
+        const roleResult = await db.query(defaultRoleQuery);
 
         if (roleResult.rows.length === 0) {
             console.error("Error crítico: El rol por defecto 'Miembro de Equipo' no se encuentra en la base de datos.");
@@ -99,7 +99,7 @@ export const register = async (req, res) => {
         VALUES ($1, $2, $3, $4)
         RETURNING id, nombre_completo, email, rol_id
       `;
-        const newUserResult = await pool.query(insertUserQuery, [nombre_completo, email, passwordHash, defaultRoleId]);
+        const newUserResult = await db.query(insertUserQuery, [nombre_completo, email, passwordHash, defaultRoleId]);
         const nuevoUsuario = newUserResult.rows[0];
 
         req.session.usuario = {
@@ -109,7 +109,7 @@ export const register = async (req, res) => {
             rol_id: nuevoUsuario.rol_id,
         };
 
-        res.status(201).json({ 
+        res.status(201).json({
             message: 'Usuario registrado e sesión iniciada exitosamente.',
             usuario: req.session.usuario
         });
