@@ -22,9 +22,9 @@ function LoginPage() {
 
     return (
         <div className="d-flex align-items-center justify-content-center vh-100">
-            <div className="p-4 border rounded-3 bg-dark shadow" style={{maxWidth: '450px', width: '100%'}}>
+            <div className="p-4 border rounded-3 bg-dark shadow" style={{ maxWidth: '450px', width: '100%' }}>
                 <form onSubmit={handleSubmit}>
-                    <h2 className="text-center mb-4 text-primary">Iniciar Sesión</h2> 
+                    <h2 className="text-center mb-4 text-primary">Iniciar Sesión</h2>
                     {error && <div className="alert alert-danger">{error}</div>}
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label">Correo Electrónico</label>
@@ -35,7 +35,10 @@ function LoginPage() {
                         <input type="password" id="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
                     </div>
                     <div className="d-grid">
-                        <button type="submit" className="btn btn-primary">Ingresar</button> 
+                        <button type="submit" className="btn btn-primary">Ingresar</button>
+                    </div>
+                    <div className="text-center mt-2">
+                        <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
                     </div>
                     <p className="text-center mt-3">
                         ¿No tienes una cuenta? <Link to="/register">Regístrate aquí</Link>
