@@ -10,6 +10,8 @@ import ForgotPasswordPage from './pages/ForgotPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
+//Prueba
+
 function App() {
   return (
     <AuthProvider>
