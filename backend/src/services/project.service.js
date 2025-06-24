@@ -67,10 +67,119 @@ export const listarProyectos = async (params, usuarioSesion) => {
 
     const query = `
         SELECT * FROM proyectos 
-        WHERE empresa_id = $1 
+        WHERE empresa_id = $1 AND fecha_eliminacion IS NULL
         ORDER BY fecha_creacion DESC;
     `;
-
+    
     const { rows } = await db.query(query, [empresa_id]);
     return rows;
+};
+
+/**
+ * Obtiene un proyecto específico por su ID.
+ * @param {object} params - Debe contener { id: "uuid-del-proyecto" }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {object} El objeto del proyecto encontrado.
+ */
+export const obtenerProyectoPorId = async (params, usuarioSesion) => {
+    const { id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!id) {
+        throw new Error('Se requiere el ID del proyecto.');
+    }
+
+    // El WHERE es crucial para la seguridad y multi-tenancy
+    const query = 'SELECT * FROM proyectos WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL';
+    const { rows } = await db.query(query, [id, empresa_id]);
+
+    if (rows.length === 0) {
+        throw new Error('Proyecto no encontrado o no tienes permiso para verlo.');
+    }
+
+    return rows[0];
+};
+
+/**
+ * Actualiza un proyecto existente.
+ * @param {object} params - Debe contener { id: "uuid", y opcionalmente nombre, descripcion, fecha_fin_estimada }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {object} El objeto del proyecto actualizado.
+ */
+export const actualizarProyecto = async (params, usuarioSesion) => {
+    const { id, nombre, descripcion, fecha_fin_estimada } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!id) {
+        throw new Error('El ID del proyecto es requerido para actualizar.');
+    }
+
+    const fields = [];
+    const values = [];
+    let queryIndex = 1;
+
+    if (nombre) {
+        fields.push(`nombre_proyecto = $${queryIndex++}`);
+        values.push(nombre);
+    }
+    if (descripcion) {
+        fields.push(`descripcion = $${queryIndex++}`);
+        values.push(descripcion);
+    }
+    if (fecha_fin_estimada) {
+        fields.push(`fecha_fin_estimada = $${queryIndex++}`);
+        values.push(fecha_fin_estimada);
+    }
+
+    if (fields.length === 0) {
+        throw new Error('No se proporcionaron campos para actualizar.');
+    }
+
+    // Añadimos el id del proyecto y el id de la empresa al final para el WHERE
+    values.push(id, empresa_id);
+
+    const query = `
+        UPDATE proyectos 
+        SET ${fields.join(', ')}, fecha_actualizacion = NOW()
+        WHERE id = $${queryIndex++} AND empresa_id = $${queryIndex++}
+        RETURNING *;
+    `;
+
+    const { rows, rowCount } = await db.query(query, values);
+
+    if (rowCount === 0) {
+        throw new Error('Proyecto no encontrado o no tienes permiso para modificarlo.');
+    }
+
+    return rows[0];
+};
+
+/**
+ * Realiza un borrado lógico (soft delete) de un proyecto, marcándolo con una fecha de eliminación.
+ * @param {object} params - Debe contener { id: "uuid-del-proyecto" }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {object} El proyecto que fue archivado.
+ */
+export const archivarProyecto = async (params, usuarioSesion) => {
+    const { id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!id) {
+        throw new Error('El ID del proyecto es requerido para archivarlo.');
+    }
+
+    const query = `
+        UPDATE proyectos 
+        SET fecha_eliminacion = NOW() 
+        WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL
+        RETURNING *;
+    `;
+    
+    const { rows, rowCount } = await db.query(query, [id, empresa_id]);
+
+    if (rowCount === 0) {
+        throw new Error('Proyecto no encontrado, ya fue eliminado, o no tienes permiso.');
+    }
+
+    return rows[0];
 };

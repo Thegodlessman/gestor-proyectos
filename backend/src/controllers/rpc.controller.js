@@ -32,7 +32,20 @@ export const handleRpcRequest = async (req, res) => {
                     tienePermiso = true;
                 }
                 break;
+            case 'proyectos.actualizar': 
+                if (['Administrador', 'Project Manager'].includes(usuario.nombre_rol)) {
+                    tienePermiso = true;
+                }
+                break;
+            case 'proyectos.archivar': 
+                if (usuario.nombre_rol === 'Administrador') {
+                    tienePermiso = true;
+                }
+                break;
             case 'proyectos.listar':
+                tienePermiso = true;
+                break;
+            case 'proyectos.obtenerPorId':
                 tienePermiso = true;
                 break;
             case 'invitaciones.crear':
