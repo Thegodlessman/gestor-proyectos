@@ -45,7 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/security', securityRoutes); 
 app.use('/api/rpc', rpcRoutes);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`Server backend on port ${PORT}`);

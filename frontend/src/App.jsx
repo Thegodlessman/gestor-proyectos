@@ -6,8 +6,11 @@ import VerificarEmailPage from './pages/VerificarEmail';
 import SecurityPage from './pages/Security'; 
 import ForgotPasswordPage from './pages/ForgotPassword';
 
+
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+
+//Prueba 2
 
 function App() {
   return (
