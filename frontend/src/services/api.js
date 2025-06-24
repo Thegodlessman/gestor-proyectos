@@ -11,7 +11,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 async function fetchApi(endpoint, options = {}) {
     options.credentials = 'include';
-    
+
     if (options.body) {
         options.headers = {
             'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ async function fetchApi(endpoint, options = {}) {
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    
+
     const responseData = await response.json();
 
     if (!response.ok || responseData.typeMsg === 'error') {
@@ -37,14 +37,14 @@ async function fetchApi(endpoint, options = {}) {
  */
 
 export const rpcCall = (method, params = {}) => {
-  const tx = uuidv4(); 
-  
-  return fetchApi('/rpc', {
-    method: 'POST',
+    const tx = uuidv4();
 
-    // El cuerpo contiene la estructura que espera nuestro dispatcher
-    body: JSON.stringify({ method, params, tx }),
-  });
+    return fetchApi('/rpc', {
+        method: 'POST',
+
+        // El cuerpo contiene la estructura que espera nuestro dispatcher
+        body: JSON.stringify({ method, params, tx }),
+    });
 };
 
 export const getSecurityQuestions = () => {
@@ -52,7 +52,7 @@ export const getSecurityQuestions = () => {
 };
 
 export const setSecurityAnswer = (pregunta_id, respuesta) => {
-    return fetchApi('/security/answers', { 
+    return fetchApi('/security/answers', {
         method: 'POST',
         body: JSON.stringify({ pregunta_id, respuesta }),
     });
