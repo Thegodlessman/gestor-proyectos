@@ -32,6 +32,9 @@ export const handleRpcRequest = async (req, res) => {
                     tienePermiso = true;
                 }
                 break;
+            case 'proyectos.listar':
+                tienePermiso = true;
+                break;
             case 'invitaciones.crear':
                 if (usuario.nombre_rol === 'Administrador') {
                     tienePermiso = true;
