@@ -5,7 +5,10 @@ import {
     listarProyectos, 
     obtenerProyectoPorId,
     actualizarProyecto,
-    archivarProyecto
+    archivarProyecto,
+    listarMiembros,
+    agregarMiembro,
+    eliminarMiembro
 } from '../services/project.service.js';
 
 const methodRegistry = new Map();
@@ -20,5 +23,8 @@ methodRegistry.set('proyectos.listar', listarProyectos);
 methodRegistry.set('proyectos.obtenerPorId', obtenerProyectoPorId);
 methodRegistry.set('proyectos.actualizar', actualizarProyecto);
 methodRegistry.set('proyectos.archivar', archivarProyecto);
+methodRegistry.set('proyectos.agregarMiembro', agregarMiembro); 
+methodRegistry.set('proyectos.listarMiembros', listarMiembros); 
+methodRegistry.set('proyectos.eliminarMiembro', eliminarMiembro);
 
 export default methodRegistry;

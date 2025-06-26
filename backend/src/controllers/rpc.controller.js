@@ -53,6 +53,19 @@ export const handleRpcRequest = async (req, res) => {
                     tienePermiso = true;
                 }
                 break;
+            case 'proyectos.agregarMiembro':
+                if (['Administrador', 'Project Manager'].includes(usuario.nombre_rol)) {
+                    tienePermiso = true;
+                }
+                break;
+            case 'proyectos.listarMiembros':
+                tienePermiso = true;
+                break;
+            case 'proyectos.eliminarMiembro': // <-- NUEVO
+                if (['Administrador', 'Project Manager'].includes(usuario.nombre_rol)) {
+                    tienePermiso = true;
+                }
+                break;
         }
     }
     // TODO: En el futuro, esta lógica de switch se reemplazará con una única
