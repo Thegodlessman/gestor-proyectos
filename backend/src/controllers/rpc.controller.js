@@ -1,5 +1,6 @@
 import methodRegistry from '../rpc/methodRegistry.js';
 import { formatResponse, formatError } from '../utils/response.util.js';
+import { canExecute } from '../services/security.service.js'; 
 
 export const handleRpcRequest = async (req, res) => {
     const { method, params, tx } = req.body;
@@ -16,54 +17,20 @@ export const handleRpcRequest = async (req, res) => {
         return res.status(404).json(formatError(tx, error, error.message));
     }
 
-    let tienePermiso = false;
-
-    // Métodos públicos que no requieren sesión
+    // Métodos públicos que no necesitan validación de permisos
     const metodosPublicos = ['invitaciones.validarToken', 'auth.register'];
-    if (metodosPublicos.includes(method)) {
-        tienePermiso = true;
-    }
 
-    // Métodos que sí requieren sesión
-    if (usuario && usuario.nombre_rol) {
-        switch (method) {
-            case 'proyectos.crear':
-                if (['Administrador', 'Project Manager'].includes(usuario.nombre_rol)) {
-                    tienePermiso = true;
-                }
-                break;
-            case 'proyectos.actualizar': 
-                if (['Administrador', 'Project Manager'].includes(usuario.nombre_rol)) {
-                    tienePermiso = true;
-                }
-                break;
-            case 'proyectos.archivar': 
-                if (usuario.nombre_rol === 'Administrador') {
-                    tienePermiso = true;
-                }
-                break;
-            case 'proyectos.listar':
-                tienePermiso = true;
-                break;
-            case 'proyectos.obtenerPorId':
-                tienePermiso = true;
-                break;
-            case 'invitaciones.crear':
-                if (usuario.nombre_rol === 'Administrador') {
-                    tienePermiso = true;
-                }
-                break;
-        }
+    let tienePermiso = metodosPublicos.includes(method);
+
+    // Si no es un método público, verificamos los permisos del usuario logueado
+    if (!tienePermiso && usuario) {
+        tienePermiso = canExecute(usuario.rol_id, method);
     }
-    // TODO: En el futuro, esta lógica de switch se reemplazará con una única
-    // consulta al mapa de permisos en memoria, como en el diagrama del profesor.
 
     if (!tienePermiso) {
         const error = new Error('No tienes permiso para ejecutar este método.');
         return res.status(403).json(formatError(tx, error, 'Acceso denegado.'));
     }
-
-    // --- TERMINA LÓGICA DE PERMISOS ---
 
     try {
         const result = await methodFunction(params, usuario);

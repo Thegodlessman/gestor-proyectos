@@ -183,3 +183,106 @@ export const archivarProyecto = async (params, usuarioSesion) => {
 
     return rows[0];
 };
+
+/**
+ * Agrega un usuario existente de la misma empresa a un proyecto.
+ * @param {object} params - Debe contener { proyecto_id, email_miembro, rol_proyecto_id }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {object} El registro de la nueva asignación.
+ */
+export const agregarMiembro = async (params, usuarioSesion) => {
+    const { proyecto_id, email_miembro, rol_proyecto_id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!proyecto_id || !email_miembro || !rol_proyecto_id) {
+        throw new Error('Se requiere el ID del proyecto, el email del miembro y el ID del rol.');
+    }
+
+    const client = await db.getPool().connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar que el proyecto existe y pertenece a la empresa del admin/pm.
+        const proyectoResult = await client.query('SELECT id FROM proyectos WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL', [proyecto_id, empresa_id]);
+        if (proyectoResult.rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
+
+        // 2. Encontrar al usuario a agregar por su email y verificar que pertenece a la misma empresa.
+        const usuarioResult = await client.query('SELECT id FROM usuarios WHERE email = $1 AND empresa_id = $2', [email_miembro, empresa_id]);
+        if (usuarioResult.rowCount === 0) throw new Error(`No se encontró un usuario con el email '${email_miembro}' en tu empresa.`);
+        const usuario_a_agregar_id = usuarioResult.rows[0].id;
+
+        // 3. Verificar que el usuario no esté ya en el proyecto.
+        const yaEsMiembro = await client.query('SELECT id FROM proyecto_usuarios WHERE proyecto_id = $1 AND usuario_id = $2', [proyecto_id, usuario_a_agregar_id]);
+        if (yaEsMiembro.rowCount > 0) throw new Error('Este usuario ya es miembro del proyecto.');
+
+        // 4. Insertar la nueva asignación.
+        const asignacionQuery = 'INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, rol_proyecto_id) VALUES ($1, $2, $3) RETURNING *';
+        const nuevaAsignacion = await client.query(asignacionQuery, [proyecto_id, usuario_a_agregar_id, rol_proyecto_id]);
+
+        await client.query('COMMIT');
+        return nuevaAsignacion.rows[0];
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+/**
+ * Lista todos los miembros de un proyecto específico.
+ * @param {object} params - Debe contener { proyecto_id }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {Array} Un array de objetos con los detalles de los miembros.
+ */
+export const listarMiembros = async (params, usuarioSesion) => {
+    const { proyecto_id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!proyecto_id) throw new Error('Se requiere el ID del proyecto.');
+
+    const query = `
+        SELECT p.nombre, p.apellido, u.email, rp.nombre_rol_proyecto, pu.fecha_incorporacion
+        FROM proyecto_usuarios pu
+        JOIN usuarios u ON pu.usuario_id = u.id
+        JOIN perfiles p ON u.id = p.usuario_id
+        JOIN roles_proyecto rp ON pu.rol_proyecto_id = rp.id
+        WHERE pu.proyecto_id = $1 AND u.empresa_id = $2
+        ORDER BY p.nombre;
+    `;
+    const { rows } = await db.query(query, [proyecto_id, empresa_id]);
+    return rows;
+};
+
+/**
+ * Elimina a un miembro de un proyecto.
+ * @param {object} params - Debe contener { proyecto_id, usuario_id }.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión.
+ * @returns {object} Un mensaje de éxito.
+ */
+export const eliminarMiembro = async (params, usuarioSesion) => {
+    const { proyecto_id, usuario_id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    if (!proyecto_id || !usuario_id) {
+        throw new Error('Se requiere el ID del proyecto y el ID del usuario.');
+    }
+
+    const query = `
+        DELETE FROM proyecto_usuarios pu
+        USING proyectos p
+        WHERE pu.proyecto_id = p.id
+        AND pu.proyecto_id = $1
+        AND pu.usuario_id = $2
+        AND p.empresa_id = $3;
+    `;
+
+    const { rowCount } = await db.query(query, [proyecto_id, usuario_id, empresa_id]);
+
+    if (rowCount === 0) {
+        throw new Error('No se encontró la asignación del miembro o no tienes permiso para eliminarla.');
+    }
+
+    return { message: 'Miembro eliminado del proyecto exitosamente.' };
+};
