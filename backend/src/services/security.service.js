@@ -15,6 +15,8 @@ export async function initSecurityCache() {
         `;
         const { rows } = await db.query(query);
 
+        //console.log(rows)
+
         // Limpiamos el mapa anterior y lo reconstruimos
         permissionMap.clear();
         for (const rule of rows) {
@@ -36,9 +38,11 @@ export async function initSecurityCache() {
  * @returns {boolean} - True si tiene permiso, false si no.
  */
 export function canExecute(rol_id, methodName) {
+    //console.log(permissionMap)
     if (!rol_id || !methodName) {
         return false;
     }
     const key = `${rol_id}-${methodName}`;
+    //console.log("esta es la llave: ----> "+key)
     return permissionMap.has(key);
 }
