@@ -3,6 +3,8 @@ import cors from 'cors';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import db from './src/config/db.js'; 
+import { initSecurityCache } from './src/services/security.service.js';
+
 import authRoutes from './src/routes/auth.routes.js';
 import securityRoutes from './src/routes/security.routes.js';
 import rpcRoutes from './src/routes/rpc.routes.js';
@@ -47,6 +49,16 @@ app.use('/api/rpc', rpcRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-    console.log(`Server backend on port ${PORT}`);
-});
+const startServer = async () => {
+    try {
+        await initSecurityCache();
+
+        app.listen(PORT, () => {
+            console.log(`SERVER BACKEND ON PORT: ${PORT}`);
+        });
+    } catch (error) {
+        console.error('No se pudo iniciar el servidor.', error);
+    }
+};
+
+startServer();
