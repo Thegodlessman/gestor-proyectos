@@ -16,6 +16,8 @@ export const obtenerMatrizDePermisos = async () => {
         rolesPromise, opcionesPromise, permisosPromise, reglasExistentesPromise
     ]);
 
+    const roles = rolesResult.rows;
+
     // Procesamos las reglas existentes en un formato fácil de buscar (un Set)
     const reglasSet = new Set(
         reglasResult.rows.map(r => `${r.rol_id}-${r.opcion_id}-${r.permiso_id}`)
@@ -47,8 +49,10 @@ export const obtenerMatrizDePermisos = async () => {
         });
     }
 
-    // Devolvemos el objeto final
-    return modulos;
+    return {
+        matriz: modulos,
+        roles: roles
+    };
 };
 
 /**
