@@ -2,8 +2,8 @@ import db from '../config/db.js';
 
 let permissionMap = new Map();
 
-export async function initSecurityCache() {
-    console.log('Cargando mapa de permisos en memoria...');
+export async function updateSecurityCache() {
+    console.log('Cargando/Actualizando mapa de permisos en memoria...');
     try {
         const query = `
             SELECT 
@@ -15,16 +15,15 @@ export async function initSecurityCache() {
         `;
         const { rows } = await db.query(query);
 
-        //console.log(rows)
-
-        // Limpiamos el mapa anterior y lo reconstruimos
-        permissionMap.clear();
+        const newPermissionMap = new Map();
         for (const rule of rows) {
             const key = `${rule.rol_id}-${rule.nombre_metodo}`;
-            permissionMap.set(key, true);
+            newPermissionMap.set(key, true);
         }
+        
+        permissionMap = newPermissionMap; 
 
-        console.log(`Mapa de permisos cargado exitosamente. ${permissionMap.size} reglas activas.`);
+        console.log(`Mapa de permisos actualizado. ${permissionMap.size} reglas activas.`);
     } catch (error) {
         console.error('Error Crítico: No se pudo construir el caché de seguridad.', error);
         process.exit(1);

@@ -88,8 +88,7 @@ export const obtenerProyectoPorId = async (params, usuarioSesion) => {
     if (!id) {
         throw new Error('Se requiere el ID del proyecto.');
     }
-
-    // El WHERE es crucial para la seguridad y multi-tenancy
+    
     const query = 'SELECT * FROM proyectos WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL';
     const { rows } = await db.query(query, [id, empresa_id]);
 

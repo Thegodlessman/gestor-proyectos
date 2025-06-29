@@ -14,8 +14,7 @@ export const crearInvitacion = async (params, usuarioSesion) => {
     await db.query(`
         DELETE FROM invitaciones 
         WHERE empresa_id = $1 
-        AND email = $2 
-        AND fue_usado = false`, 
+        AND email = $2`, 
         [usuarioSesion.empresa_id, emailAInvitar]);
 
     // Generar token y expiración

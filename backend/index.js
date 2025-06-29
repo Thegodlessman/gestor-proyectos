@@ -3,7 +3,7 @@ import cors from 'cors';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import db from './src/config/db.js'; 
-import { initSecurityCache } from './src/services/security.service.js';
+import { updateSecurityCache } from './src/services/security.service.js';
 
 import authRoutes from './src/routes/auth.routes.js';
 import securityRoutes from './src/routes/security.routes.js';
@@ -51,7 +51,7 @@ const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
     try {
-        await initSecurityCache();
+        await updateSecurityCache()
 
         app.listen(PORT, () => {
             console.log(`SERVER BACKEND ON PORT: ${PORT}`);
