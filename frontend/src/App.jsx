@@ -5,12 +5,11 @@ import DashboardPage from './pages/Dashboard';
 import VerificarEmailPage from './pages/VerificarEmail';
 import SecurityPage from './pages/Security'; 
 import ForgotPasswordPage from './pages/ForgotPassword';
+import AdminPermissionsPage from './pages/AdminPermissionsPage';
 
 
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
-
-//Prueba 2
 
 function App() {
   return (
@@ -33,7 +32,9 @@ function App() {
             path="/seguridad" 
             element={<ProtectedRoute><SecurityPage /></ProtectedRoute>} 
           />
-          
+          <Route path="/admin/permisos" 
+          element={<ProtectedRoute><AdminPermissionsPage /></ProtectedRoute>}
+          />
         </Routes>
       </Router>
     </AuthProvider>
