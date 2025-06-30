@@ -1,5 +1,6 @@
 import { crearInvitacion, validarTokenInvitacion } from '../services/invitation.service.js'
 import { registrarUsuarioConInvitacion } from '../services/user.service.js';
+import { obtenerMatrizDePermisos, actualizarPermiso } from '../services/admin.service.js';
 import { 
     crearProyecto, 
     listarProyectos, 
@@ -26,5 +27,10 @@ methodRegistry.set('proyectos.archivar', archivarProyecto);
 methodRegistry.set('proyectos.agregarMiembro', agregarMiembro); 
 methodRegistry.set('proyectos.listarMiembros', listarMiembros); 
 methodRegistry.set('proyectos.eliminarMiembro', eliminarMiembro);
+
+methodRegistry.set('permisos.obtenerMatriz', obtenerMatrizDePermisos);
+methodRegistry.set('permisos.actualizar', actualizarPermiso);
+
+//console.log(methodRegistry)
 
 export default methodRegistry;

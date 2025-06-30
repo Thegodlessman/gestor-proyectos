@@ -1,5 +1,3 @@
-
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -9,6 +7,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerificarEmail from "./pages/VerificarEmail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProjectsPage from "./pages/ProjectsPage"; // <-- Importa la nueva página de Proyectos
+import AdminPermissionsPage from './pages/AdminPermissionsPage';
 
 function App() {
   return (
@@ -25,7 +24,11 @@ function App() {
           <Route path="/projects" element={<ProjectsPage />} /> {/* <-- RUTA AÑADIDA */}
           <Route path="/security" element={<Security />} />
         </Route>
-      </Routes>
+
+        <Route path="/admin/permisos" 
+          element={<ProtectedRoute><AdminPermissionsPage /></ProtectedRoute>}
+          />
+      </Routes
   );
 }
 

@@ -4,7 +4,7 @@ import { canExecute } from '../services/security.service.js';
 
 export const handleRpcRequest = async (req, res) => {
     const { method, params, tx } = req.body;
-    const usuario = req.session.usuario; // Obtenemos el usuario de la sesión
+    const usuario = req.session.usuario;
 
     if (!method || !tx) {
         const error = new Error('El método y el tx_id son requeridos.');
