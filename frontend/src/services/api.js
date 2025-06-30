@@ -8,10 +8,8 @@ const API_BASE_URL = 'http://localhost:3000/api';
  * @param {object} options - Opciones para la petición fetch.
  * @returns {Promise<any>} - La propiedad 'data' de la respuesta del backend.
  */
-
 async function fetchApi(endpoint, options = {}) {
     options.credentials = 'include';
-
     if (options.body) {
         options.headers = {
             'Content-Type': 'application/json',
@@ -20,13 +18,18 @@ async function fetchApi(endpoint, options = {}) {
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-
     const responseData = await response.json();
 
-    if (!response.ok || responseData.typeMsg === 'error') {
-        throw new Error(responseData.shortMsg || 'Ocurrió un error en la API.');
+    if (!response.ok) {
+        // Si hay un error, usamos el shortMsg del sobre RPC o el message de un error REST.
+        throw new Error(responseData.shortMsg || responseData.message || 'Ocurrió un error en la API.');
     }
-    return responseData.data;
+
+    if (responseData.hasOwnProperty('data')) {
+        return responseData.data;
+    } else {
+        return responseData;
+    }
 }
 
 /**
