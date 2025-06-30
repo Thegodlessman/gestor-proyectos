@@ -28,7 +28,7 @@ function App() {
         <Route path="/admin/permisos" 
           element={<ProtectedRoute><AdminPermissionsPage /></ProtectedRoute>}
           />
-      </Routes
+      </Routes>
   );
 }
 
