@@ -1,26 +1,50 @@
-// src/pages/SecurityPage.jsx
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getSecurityQuestions, setSecurityAnswer } from '../services/api';
 
-function SecurityPage() {
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext';
+// Se usan las funciones de tu api.js original, que ya funcionan
+import { getSecurityQuestions, setSecurityAnswer } from '../services/api'; 
+
+// --- Componentes de PrimeReact ---
+import { Card } from 'primereact/card';
+import { Button } from 'primereact/button';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { Toast } from 'primereact/toast';
+import { Skeleton } from 'primereact/skeleton';
+
+// Mantenemos el nombre del componente que se usa en App.jsx: "Security"
+function Security() {
+    const { user } = useAuth(); // Usamos el contexto para obtener el id del usuario
+    const toast = useRef(null);
+
+    // --- Estados basados 100% en tu lógica funcional original ---
     const [questions, setQuestions] = useState([]);
-    const [selectedQuestion, setSelectedQuestion] = useState('');
+    const [selectedQuestion, setSelectedQuestion] = useState(null); // Corregido a null para PrimeReact
     const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const [isSaving, setIsSaving] = useState(false);
 
+    // --- useEffect con tu lógica de carga original ---
     useEffect(() => {
-        // Al cargar el componente, obtenemos la lista de preguntas
         const loadQuestions = async () => {
+            setIsLoading(true);
             try {
+                // Se llama a la función que ya tenías y que funciona
                 const data = await getSecurityQuestions();
-                setQuestions(data);
-                if (data.length > 0) {
+                setQuestions(data || []); // Se asegura que sea un array para evitar errores
+                
+                if (data && data.length > 0) {
+                    // Pre-seleccionar la primera pregunta por defecto, como en tu código original
                     setSelectedQuestion(data[0].id); 
                 }
             } catch (error) {
-                setMessage({ type: 'danger', text: error.message });
+                if (toast.current) {
+                    toast.current.show({ 
+                        severity: 'error', 
+                        summary: 'Error de Carga', 
+                        detail: error.message || 'No se pudieron cargar las preguntas.' 
+                    });
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -28,79 +52,183 @@ function SecurityPage() {
         loadQuestions();
     }, []); 
 
+    // --- handleSubmit con tu lógica de guardado original ---
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage({ type: '', text: '' }); 
-        if (!selectedQuestion || !answer) {
-            setMessage({ type: 'danger', text: 'Por favor, selecciona una pregunta y escribe una respuesta.' });
+        if (!selectedQuestion || !answer.trim()) {
+            toast.current.show({ severity: 'warn', summary: 'Atención', detail: 'Por favor, selecciona una pregunta y escribe una respuesta.' });
             return;
         }
 
+        setIsSaving(true);
         try {
+            // Se llama a la función que ya tenías y que funciona
             const data = await setSecurityAnswer(selectedQuestion, answer);
-            setMessage({ type: 'success', text: data.message });
+            toast.current.show({ severity: 'success', summary: 'Éxito', detail: data.message });
         } catch (error) {
-            setMessage({ type: 'danger', text: error.message });
+            toast.current.show({ severity: 'error', summary: 'Error al Guardar', detail: error.message });
+        } finally {
+            setIsSaving(false);
         }
     };
 
     if (isLoading) {
-        return <div>Cargando preguntas...</div>;
+        return (
+            <Card title="Seguridad de la Cuenta">
+                <Skeleton height="15rem"></Skeleton>
+            </Card>
+        );
     }
 
     return (
-        <div className="container mt-5">
-            <div className="row justify-content-center">
-                <div className="col-md-8 col-lg-6">
-                    <div className="card bg-dark text-white">
-                        <div className="card-body">
-                            <h2 className="card-title text-center text-primary mb-4">Preguntas de Seguridad</h2>
-                            <p className="text-body-secondary text-center">Configura tu pregunta de seguridad para poder recuperar tu cuenta en el futuro.</p>
-                            
-                            {message.text && (
-                                <div className={`alert alert-${message.type}`} role="alert">
-                                    {message.text}
-                                </div>
-                            )}
+        <>
+            <Toast ref={toast} />
+            <Card title="Preguntas de Seguridad" subTitle="Configura tu pregunta para recuperar tu cuenta en el futuro.">
+                <form onSubmit={handleSubmit}>
+                    <div className="p-fluid flex flex-column gap-4">
+                        <div className="field">
+                            <label htmlFor="security-question" className="font-bold block mb-2">Elige una pregunta</label>
+                            <Dropdown
+                                id="security-question" 
+                                value={selectedQuestion}
+                                options={questions}
+                                onChange={(e) => setSelectedQuestion(e.value)}
+                                optionLabel="pregunta_texto" 
+                                optionValue="id"
+                                placeholder="Selecciona una pregunta"
+                                filter
+                                emptyMessage="No hay preguntas disponibles"
+                            />
+                        </div>
 
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label htmlFor="security-question" className="form-label">Elige una pregunta</label>
-                                    <select 
-                                        id="security-question" 
-                                        className="form-select"
-                                        value={selectedQuestion}
-                                        onChange={(e) => setSelectedQuestion(e.target.value)}
-                                    >
-                                        {questions.map((q) => (
-                                            <option key={q.id} value={q.id}>
-                                                {q.pregunta_texto}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="mb-3">
-                                    <label htmlFor="security-answer" className="form-label">Tu Respuesta Secreta</label>
-                                    <input 
-                                        type="text" 
-                                        id="security-answer"
-                                        className="form-control"
-                                        value={answer}
-                                        onChange={(e) => setAnswer(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="d-grid gap-2">
-                                    <button type="submit" className="btn btn-primary">Guardar Respuesta</button>
-                                    <Link to="/dashboard" className="btn btn-secondary">Volver al Dashboard</Link>
-                                </div>
-                            </form>
+                        <div className="field">
+                            <label htmlFor="security-answer" className="font-bold block mb-2">Tu Respuesta Secreta</label>
+                            <InputText
+                                id="security-answer"
+                                value={answer}
+                                onChange={(e) => setAnswer(e.target.value)}
+                                placeholder="Escribe tu respuesta aquí"
+                                required
+                            />
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                    <div className="flex justify-content-end mt-4">
+                        <Button type="submit" label="Guardar Respuesta" loading={isSaving} />
+                    </div>
+                </form>
+            </Card>
+        </>
     );
 }
 
-export default SecurityPage;
+// Se exporta con el nombre correcto para que coincida con App.jsx
+export default Security;
+
+
+
+
+// import React, { useState, useEffect } from 'react';
+// import { Link } from 'react-router-dom';
+// import { getSecurityQuestions, setSecurityAnswer } from '../services/api';
+
+// function SecurityPage() {
+//     const [questions, setQuestions] = useState([]);
+//     const [selectedQuestion, setSelectedQuestion] = useState('');
+//     const [answer, setAnswer] = useState('');
+//     const [isLoading, setIsLoading] = useState(true);
+//     const [message, setMessage] = useState({ type: '', text: '' });
+
+//     useEffect(() => {
+//         // Al cargar el componente, obtenemos la lista de preguntas
+//         const loadQuestions = async () => {
+//             try {
+//                 const data = await getSecurityQuestions();
+//                 setQuestions(data);
+//                 if (data.length > 0) {
+//                     setSelectedQuestion(data[0].id); 
+//                 }
+//             } catch (error) {
+//                 setMessage({ type: 'danger', text: error.message });
+//             } finally {
+//                 setIsLoading(false);
+//             }
+//         };
+//         loadQuestions();
+//     }, []); 
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         setMessage({ type: '', text: '' }); 
+//         if (!selectedQuestion || !answer) {
+//             setMessage({ type: 'danger', text: 'Por favor, selecciona una pregunta y escribe una respuesta.' });
+//             return;
+//         }
+
+//         try {
+//             const data = await setSecurityAnswer(selectedQuestion, answer);
+//             setMessage({ type: 'success', text: data.message });
+//         } catch (error) {
+//             setMessage({ type: 'danger', text: error.message });
+//         }
+//     };
+
+//     if (isLoading) {
+//         return <div>Cargando preguntas...</div>;
+//     }
+
+//     return (
+//         <div className="container mt-5">
+//             <div className="row justify-content-center">
+//                 <div className="col-md-8 col-lg-6">
+//                     <div className="card bg-dark text-white">
+//                         <div className="card-body">
+//                             <h2 className="card-title text-center text-primary mb-4">Preguntas de Seguridad</h2>
+//                             <p className="text-body-secondary text-center">Configura tu pregunta de seguridad para poder recuperar tu cuenta en el futuro.</p>
+                            
+//                             {message.text && (
+//                                 <div className={`alert alert-${message.type}`} role="alert">
+//                                     {message.text}
+//                                 </div>
+//                             )}
+
+//                             <form onSubmit={handleSubmit}>
+//                                 <div className="mb-3">
+//                                     <label htmlFor="security-question" className="form-label">Elige una pregunta</label>
+//                                     <select 
+//                                         id="security-question" 
+//                                         className="form-select"
+//                                         value={selectedQuestion}
+//                                         onChange={(e) => setSelectedQuestion(e.target.value)}
+//                                     >
+//                                         {questions.map((q) => (
+//                                             <option key={q.id} value={q.id}>
+//                                                 {q.pregunta_texto}
+//                                             </option>
+//                                         ))}
+//                                     </select>
+//                                 </div>
+//                                 <div className="mb-3">
+//                                     <label htmlFor="security-answer" className="form-label">Tu Respuesta Secreta</label>
+//                                     <input 
+//                                         type="text" 
+//                                         id="security-answer"
+//                                         className="form-control"
+//                                         value={answer}
+//                                         onChange={(e) => setAnswer(e.target.value)}
+//                                         required
+//                                     />
+//                                 </div>
+//                                 <div className="d-grid gap-2">
+//                                     <button type="submit" className="btn btn-primary">Guardar Respuesta</button>
+//                                     <Link to="/dashboard" className="btn btn-secondary">Volver al Dashboard</Link>
+//                                 </div>
+//                             </form>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// }
+
+// export default SecurityPage;
