@@ -23,11 +23,8 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/projects" element={<ProjectsPage />} /> {/* <-- RUTA AÑADIDA */}
           <Route path="/security" element={<Security />} />
+          <Route path="/admin/permisos" element={<AdminPermissionsPage/>}/>
         </Route>
-
-        <Route path="/admin/permisos" 
-          element={<ProtectedRoute><AdminPermissionsPage /></ProtectedRoute>}
-          />
       </Routes>
   );
 }
