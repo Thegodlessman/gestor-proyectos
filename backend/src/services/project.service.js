@@ -8,7 +8,7 @@ import db from '../config/db.js';
  */
 
 export const crearProyecto = async (params, usuarioSesion) => {
-    const { nombre, descripcion, fecha_fin_estimada } = params;
+    const { nombre, descripcion, fecha_fin_estimada, prioridad_id } = params;
     const { id: usuario_id, empresa_id } = usuarioSesion;
 
     if (!nombre || !fecha_fin_estimada) {
@@ -30,11 +30,11 @@ export const crearProyecto = async (params, usuarioSesion) => {
 
         // 1. Insertar el nuevo proyecto
         const proyectoQuery = `
-            INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id)
-            VALUES ($1, $2, NOW(), $3, $4, $5, $6)
+            INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, prioridad_id, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id)
+            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7)
             RETURNING *;
         `;
-        const nuevoProyectoResult = await client.query(proyectoQuery, [nombre, descripcion || null, fecha_fin_estimada, estado_inicial_id, usuario_id, empresa_id]);
+        const nuevoProyectoResult = await client.query(proyectoQuery, [nombre, descripcion || null, prioridad_id, fecha_fin_estimada, estado_inicial_id, usuario_id, empresa_id]);
         const nuevoProyecto = nuevoProyectoResult.rows[0];
 
         // 2. Asignar al usuario creador al proyecto con el rol de "Líder de Proyecto"
@@ -63,15 +63,38 @@ export const crearProyecto = async (params, usuarioSesion) => {
  * @returns {Array} Un array de proyectos.
  */
 export const listarProyectos = async (params, usuarioSesion) => {
-    const { empresa_id } = usuarioSesion;
+    const { id: usuario_id, empresa_id } = usuarioSesion;
 
     const query = `
-        SELECT * FROM proyectos 
-        WHERE empresa_id = $1 AND fecha_eliminacion IS NULL
-        ORDER BY fecha_creacion DESC;
+        SELECT 
+            p.id,
+            p.nombre_proyecto,
+            p.descripcion,
+            p.fecha_creacion,
+            p.fecha_fin_estimada,
+            p.progreso,
+            creator_profile.nombre || ' ' || creator_profile.apellido AS nombre_responsable,
+            ep.nombre_estado AS estado,
+            pr.nombre_prioridad AS prioridad
+        FROM 
+            proyectos p
+        JOIN 
+            proyecto_usuarios pu ON p.id = pu.proyecto_id
+        JOIN 
+            estados_proyecto ep ON p.estado_proyecto_id = ep.id
+        JOIN 
+            perfiles creator_profile ON p.usuario_creador_id = creator_profile.usuario_id
+        LEFT JOIN 
+            prioridades pr ON p.prioridad_id = pr.id
+        WHERE 
+            pu.usuario_id = $1 
+            AND p.empresa_id = $2 
+            AND p.fecha_eliminacion IS NULL
+        ORDER BY 
+            p.fecha_creacion DESC;
     `;
-    
-    const { rows } = await db.query(query, [empresa_id]);
+
+    const { rows } = await db.query(query, [usuario_id, empresa_id]);
     return rows;
 };
 
