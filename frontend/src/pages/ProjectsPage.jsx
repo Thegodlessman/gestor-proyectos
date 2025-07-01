@@ -1,6 +1,6 @@
 // src/pages/ProjectsPage.jsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { rpcCall } from '../services/api';
@@ -33,21 +33,20 @@ const ProjectsPage = () => {
     const [newProjectEndDate, setNewProjectEndDate] = useState(null);
     const [newProjectPriority, setNewProjectPriority] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
     // Opciones para el dropdown de prioridad
     const priorities = [
-        { label: 'Baja', value: 1 },
-        { label: 'Media', value: 2 },
-        { label: 'Alta', value: 3 }
+        { label: 'Baja', value: '4706b812-2efb-4e45-a61d-94f1d75737cb' },
+        { label: 'Media', value: '022678f0-30ce-46a1-a011-06ee3f117caf' },
+        { label: 'Alta', value: '1817ff68-342c-4a2b-9817-c3b0f23c4ba9' },
+        { label: 'Urgente', value: 'e8d5d10c-ada3-4856-bd7b-f170f40fb2d4' },
     ];
 
-    const fetchProjects = async () => {
-        if (!user?.id_usuario) return;
+    const fetchProjects = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await rpcCall('proyectos.listarPorUsuario', { id_usuario: user.id_usuario });
+            const result = await rpcCall('proyectos.listar');
             const projectsWithDefaults = Array.isArray(result) 
-                ? result.map(p => ({ ...p, progreso: p.progreso || 0 }))
+                ? result.map(p => ({ ...p, progreso: p.progreso || 0 })) // Añadimos progreso por defecto si no viene
                 : [];
             setProjects(projectsWithDefaults);
         } catch (error) {
@@ -56,15 +55,11 @@ const ProjectsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        if (user?.id_usuario) {
-            fetchProjects();
-        } else {
-            setLoading(false);
-        }
-    }, [user]);
+        fetchProjects();
+    }, [fetchProjects]);
 
     // Lógica para crear un nuevo proyecto
     const handleCreateProject = async () => {
@@ -78,8 +73,7 @@ const ProjectsPage = () => {
                 nombre: newProjectName,
                 descripcion: newProjectDescription,
                 fecha_fin_estimada: newProjectEndDate.toISOString().split('T')[0],
-                prioridad_id: newProjectPriority,
-                id_usuario_propietario: user.id_usuario,
+                prioridad_id: newProjectPriority
             };
             
             await rpcCall('proyectos.crear', params);
@@ -148,12 +142,12 @@ const ProjectsPage = () => {
                     rowsPerPageOptions={[5, 10, 25]}
                     emptyMessage="No tienes proyectos asignados."
                     className="p-datatable-customers"
-                    onRowClick={(e) => navigate(`/project/${e.data.id_proyecto}`)}
+                    onRowClick={(e) => navigate(`/project/${e.data.id}`)}
                     rowClassName={() => "cursor-pointer"}
                     dataKey="id_proyecto"
                     sortMode="multiple"
                 >
-                    <Column field="nombre" header="Nombre del Proyecto" sortable style={{ minWidth: '14rem' }} />
+                    <Column field="nombre_proyecto" header="Nombre del Proyecto" sortable style={{ minWidth: '14rem' }} />
                     <Column field="nombre_responsable" header="Responsable" sortable style={{ minWidth: '12rem' }} />
                     <Column field="prioridad" header="Prioridad" sortable />
                     <Column field="progreso" header="Avance" body={progressBodyTemplate} sortable />

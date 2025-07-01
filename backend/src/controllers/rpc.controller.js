@@ -6,6 +6,8 @@ export const handleRpcRequest = async (req, res) => {
     const { method, params, tx } = req.body;
     const usuario = req.session.usuario;
 
+    //console.log('Datos de la sesión del usuario:', usuario);
+
     if (!method || !tx) {
         const error = new Error('El método y el tx_id son requeridos.');
         return res.status(400).json(formatError(tx || 'unknown', error, error.message));
