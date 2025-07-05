@@ -8,7 +8,7 @@ import db from '../config/db.js';
  */
 
 export const crearProyecto = async (params, usuarioSesion) => {
-    const { nombre, descripcion, fecha_fin_estimada, prioridad_id } = params;
+    const { nombre, descripcion, fecha_fin_estimada, prioridad_id, miembros } = params;
     const { id: usuario_id, empresa_id } = usuarioSesion;
 
     if (!nombre || !fecha_fin_estimada) {
@@ -28,22 +28,32 @@ export const crearProyecto = async (params, usuarioSesion) => {
         if (rolLiderResult.rows.length === 0) throw new Error("Rol 'Líder de Proyecto' no encontrado.");
         const rol_lider_id = rolLiderResult.rows[0].id;
 
-        // 1. Insertar el nuevo proyecto
+        const rolColaboradorResult = await client.query("SELECT id FROM roles_proyecto WHERE nombre_rol_proyecto = 'Colaborador'");
+        if (rolColaboradorResult.rows.length === 0) throw new Error("Rol 'Líder de Proyecto' no encontrado.");
+        const rol_colaborador_id = rolLiderResult.rows[0].id;
+        
+
         const proyectoQuery = `
-            INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, prioridad_id, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id)
-            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7)
-            RETURNING *;
+            INSERT INTO proyectos (nombre_proyecto, descripcion, prioridad_id, fecha_inicio, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id)
+            VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7) RETURNING *;
         `;
         const nuevoProyectoResult = await client.query(proyectoQuery, [nombre, descripcion || null, prioridad_id, fecha_fin_estimada, estado_inicial_id, usuario_id, empresa_id]);
         const nuevoProyecto = nuevoProyectoResult.rows[0];
 
-        // 2. Asignar al usuario creador al proyecto con el rol de "Líder de Proyecto"
-        const asignacionQuery = `
-            INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, rol_proyecto_id)
-            VALUES ($1, $2, $3);
-        `;
-        await client.query(asignacionQuery, [nuevoProyecto.id, usuario_id, rol_lider_id]);
+        // 2. Asignar al creador como "Líder de Proyecto"
+        const asignacionLiderQuery = 'INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, rol_proyecto_id) VALUES ($1, $2, $3);';
+        await client.query(asignacionLiderQuery, [nuevoProyecto.id, usuario_id, rol_lider_id]);
 
+        // 3. Asignar a los otros miembros seleccionados
+        if (miembros && miembros.length > 0) {
+            
+            for (const miembro of miembros) {
+                if (miembro.id !== usuario_id) { 
+                    const asignacionMiembroQuery = 'INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, rol_proyecto_id) VALUES ($1, $2, $3);';
+                    await client.query(asignacionMiembroQuery, [nuevoProyecto.id, miembro.id, rol_colaborador_id]);
+                }
+            }
+        }
         await client.query('COMMIT');
         
         return nuevoProyecto;

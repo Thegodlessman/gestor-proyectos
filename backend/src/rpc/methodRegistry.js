@@ -1,5 +1,5 @@
 import { crearInvitacion, validarTokenInvitacion } from '../services/invitation.service.js'
-import { registrarUsuarioConInvitacion } from '../services/user.service.js';
+import { registrarUsuarioConInvitacion, listarUsuariosVerificadosPorEmpresa } from '../services/user.service.js';
 import { obtenerMatrizDePermisos, actualizarPermiso } from '../services/admin.service.js';
 import { 
     crearProyecto, 
@@ -15,6 +15,8 @@ import {
 const methodRegistry = new Map();
 
 methodRegistry.set('auth.register', registrarUsuarioConInvitacion); 
+
+methodRegistry.set('usuarios.listarVerificadosPorEmpresa', listarUsuariosVerificadosPorEmpresa);
 
 methodRegistry.set('invitaciones.crear', crearInvitacion);
 methodRegistry.set('invitaciones.validarToken', validarTokenInvitacion);
