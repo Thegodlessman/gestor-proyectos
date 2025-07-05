@@ -3,10 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
- * Función genérica para manejar las peticiones fetch y el formato de respuesta "sobre".
- * @param {string} endpoint - El endpoint de la API al que llamar (ej. '/rpc').
- * @param {object} options - Opciones para la petición fetch.
- * @returns {Promise<any>} - La propiedad 'data' de la respuesta del backend.
+ * 
+ * @param {string} endpoint - 
+ * @param {object} options - 
+ * @returns {Promise<any>} -
  */
 async function fetchApi(endpoint, options = {}) {
     options.credentials = 'include';
@@ -21,7 +21,6 @@ async function fetchApi(endpoint, options = {}) {
     const responseData = await response.json();
 
     if (!response.ok) {
-        // Si hay un error, usamos el shortMsg del sobre RPC o el message de un error REST.
         throw new Error(responseData.shortMsg || responseData.message || 'Ocurrió un error en la API.');
     }
 
@@ -33,9 +32,8 @@ async function fetchApi(endpoint, options = {}) {
 }
 
 /**
- * Nuestra función RPC genérica que todos los componentes usarán.
- * @param {string} method - El nombre del método RPC a llamar (ej. 'invitaciones.crear').
- * @param {object} params - Los parámetros para el método.
+ * @param {string} method -
+ * @param {object} params -
  * @returns {Promise<any>}
  */
 
@@ -45,7 +43,6 @@ export const rpcCall = (method, params = {}) => {
     return fetchApi('/rpc', {
         method: 'POST',
 
-        // El cuerpo contiene la estructura que espera nuestro dispatcher
         body: JSON.stringify({ method, params, tx }),
     });
 };

@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-// Se usan las funciones de tu api.js original, que ya funcionan
 import { getSecurityQuestions, setSecurityAnswer } from '../services/api'; 
 
-// --- Componentes de PrimeReact ---
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
@@ -12,29 +10,25 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Skeleton } from 'primereact/skeleton';
 
-// Mantenemos el nombre del componente que se usa en App.jsx: "Security"
 function Security() {
-    const { user } = useAuth(); // Usamos el contexto para obtener el id del usuario
+    const { user } = useAuth(); 
     const toast = useRef(null);
 
-    // --- Estados basados 100% en tu lógica funcional original ---
     const [questions, setQuestions] = useState([]);
-    const [selectedQuestion, setSelectedQuestion] = useState(null); // Corregido a null para PrimeReact
+    const [selectedQuestion, setSelectedQuestion] = useState(null); 
     const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    // --- useEffect con tu lógica de carga original ---
     useEffect(() => {
         const loadQuestions = async () => {
             setIsLoading(true);
             try {
-                // Se llama a la función que ya tenías y que funciona
                 const data = await getSecurityQuestions();
-                setQuestions(data || []); // Se asegura que sea un array para evitar errores
+                setQuestions(data || []); 
                 
                 if (data && data.length > 0) {
-                    // Pre-seleccionar la primera pregunta por defecto, como en tu código original
+                   
                     setSelectedQuestion(data[0].id); 
                 }
             } catch (error) {
@@ -52,7 +46,7 @@ function Security() {
         loadQuestions();
     }, []); 
 
-    // --- handleSubmit con tu lógica de guardado original ---
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedQuestion || !answer.trim()) {
@@ -62,7 +56,7 @@ function Security() {
 
         setIsSaving(true);
         try {
-            // Se llama a la función que ya tenías y que funciona
+          
             const data = await setSecurityAnswer(selectedQuestion, answer);
             toast.current.show({ severity: 'success', summary: 'Éxito', detail: data.message });
         } catch (error) {

@@ -1,23 +1,19 @@
-// src/pages/ForgotPassword.jsx
 
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// --- Componentes de PrimeReact ---
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Toast } from 'primereact/toast';
 import { Card } from 'primereact/card';
-import { Steps } from 'primereact/steps'; // Para mostrar el progreso de los pasos
+import { Steps } from 'primereact/steps'; 
 
-// Mantenemos el nombre original de tu componente
 function ForgotPasswordPage() {
     const navigate = useNavigate();
     const toast = useRef(null);
 
-    // --- Estados 100% basados en tu lógica funcional ---
-    const [step, setStep] = useState(0); // Usamos 0-indexed para el componente Steps
+    const [step, setStep] = useState(0); 
     const [email, setEmail] = useState('');
     const [questionText, setQuestionText] = useState('');
     const [answer, setAnswer] = useState('');
@@ -26,14 +22,12 @@ function ForgotPasswordPage() {
     const [resetToken, setResetToken] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Definición de los pasos para el componente visual Steps
     const items = [
         { label: 'Correo' },
         { label: 'Pregunta' },
         { label: 'Nueva Contraseña' }
     ];
 
-    // --- Todas tus funciones de fetch se mantienen intactas ---
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -46,13 +40,11 @@ function ForgotPasswordPage() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
-            // Esta es tu lógica original: si el backend devuelve la pregunta, avanzamos.
             if (data.pregunta_texto) {
                 setQuestionText(data.pregunta_texto);
                 setResetToken(data.reset_token);
-                setStep(1); // Avanzar al siguiente paso
+                setStep(1); 
             } else {
-                // Si no, mostramos el mensaje informativo que envía el backend.
                 toast.current.show({ severity: 'info', summary: 'Información', detail: data.message, life: 6000 });
             }
         } catch (error) {
@@ -96,7 +88,6 @@ function ForgotPasswordPage() {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
-            // El mensaje de éxito se muestra en el paso final
             setStep(3);
         } catch (error) {
             toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
@@ -105,10 +96,9 @@ function ForgotPasswordPage() {
         }
     };
 
-    // --- Renderizado de cada paso con la nueva UI ---
     const renderStep = () => {
         switch (step) {
-            case 0: // Pedir Email
+            case 0: 
                 return (
                     <form onSubmit={handleEmailSubmit} className="flex flex-column gap-4">
                         <p className="text-center text-slate-600 m-0">Ingresa tu correo electrónico para iniciar el proceso de recuperación.</p>
@@ -119,7 +109,7 @@ function ForgotPasswordPage() {
                         <Button type="submit" label="Siguiente" loading={loading} />
                     </form>
                 );
-            case 1: // Responder Pregunta
+            case 1: 
                 return (
                     <form onSubmit={handleAnswerSubmit} className="flex flex-column gap-4">
                         <div className="text-center">
@@ -133,7 +123,7 @@ function ForgotPasswordPage() {
                         <Button type="submit" label="Verificar Respuesta" loading={loading} />
                     </form>
                 );
-            case 2: // Poner Nueva Contraseña
+            case 2: 
                 return (
                     <form onSubmit={handlePasswordSubmit} className="flex flex-column gap-4">
                          <Password placeholder="Nueva Contraseña" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required toggleMask feedback />
@@ -141,7 +131,7 @@ function ForgotPasswordPage() {
                         <Button type="submit" label="Actualizar Contraseña" loading={loading} />
                     </form>
                 );
-            case 3: // Éxito
+            case 3:
                 return (
                     <div className="text-center p-4">
                         <i className="pi pi-check-circle text-green-500" style={{ fontSize: '3rem' }}></i>

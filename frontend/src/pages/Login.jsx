@@ -1,10 +1,8 @@
-// frontend/src/pages/Login.jsx
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
-// Componentes de PrimeReact para la nueva UI
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -12,7 +10,6 @@ import { Toast } from 'primereact/toast';
 import { Checkbox } from 'primereact/checkbox';
 
 const LoginPage = () => {
-    // Se usa tu lógica del contexto, tal como la tenías
     const { login, isAuthenticated } = useAuth();
     
     const [email, setEmail] = useState('');
@@ -22,15 +19,12 @@ const LoginPage = () => {
     const toast = useRef(null);
     const navigate = useNavigate();
 
-    // El handleSubmit es el mismo que el tuyo, pero adaptado a la nueva UI
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             await login(email, password);
-            // Si el login tiene éxito, el useEffect se encargará de la redirección
         } catch (err) {
-            // Muestra el error del backend en un Toast
             toast.current.show({ 
                 severity: 'error', 
                 summary: 'Error de Autenticación', 
@@ -40,7 +34,6 @@ const LoginPage = () => {
         }
     };
     
-    // Este efecto vigila si la autenticación fue exitosa para redirigir
     useEffect(() => {
         if (isAuthenticated) {
             toast.current.show({ 
@@ -59,7 +52,7 @@ const LoginPage = () => {
             <Toast ref={toast} />
             <div className="flex min-h-screen font-sans">
                 
-                {/* Panel Izquierdo - Branding */}
+            
                 <div 
                     className="hidden lg:flex lg:w-7 bg-cover bg-center p-8 flex-col justify-between"
                     style={{ backgroundImage: `url('/login-bg')` }}
@@ -76,7 +69,6 @@ const LoginPage = () => {
                     </div>
                 </div>
 
-                {/* Panel Derecho - Formulario */}
                 <div className="w-full lg:w-5 p-8 flex items-center justify-content-center bg-slate-50">
                     <div className="w-full" style={{ maxWidth: '28rem' }}>
                         <div className="text-center mb-6">

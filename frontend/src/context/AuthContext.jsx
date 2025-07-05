@@ -1,4 +1,3 @@
-// frontend/src/context/AuthContext.jsx
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
@@ -53,8 +52,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const response = await fetch('http://localhost:3000/api/auth/verificar', {
                     method: 'GET',
-                    // ---- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ----
-                    // Añadimos 'credentials: include' para enviar la cookie de sesión
+              
                     credentials: 'include',
                 });
                 if (response.ok) {
@@ -62,7 +60,6 @@ export const AuthProvider = ({ children }) => {
                     setUser(data.usuario);
                     setIsAuthenticated(true);
                 } else {
-                    // Si la respuesta no es OK (ej. 401), nos aseguramos de limpiar el estado
                     setUser(null);
                     setIsAuthenticated(false);
                 }

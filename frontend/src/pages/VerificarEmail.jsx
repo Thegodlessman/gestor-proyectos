@@ -1,32 +1,26 @@
-// src/pages/VerificarEmail.jsx
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
-// --- Componentes de PrimeReact ---
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { ProgressSpinner } from 'primereact/progressspinner';
 
-// Mantenemos el nombre original del componente
 function VerificarEmailPage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     
-    // Estado para manejar el mensaje y el tipo (cargando, éxito, error)
     const [status, setStatus] = useState({ 
-        type: 'loading', // 'loading', 'success', 'error'
+        type: 'loading', 
         message: 'Verificando tu correo electrónico...' 
     });
 
-    // Tu useEffect con la lógica de fetch intacta
     useEffect(() => {
         const token = searchParams.get('token');
         if (token) {
             fetch(`http://localhost:3000/api/auth/verificar-email?token=${token}`)
                 .then(res => {
                     if (!res.ok) {
-                        // Si la respuesta no es 2xx, la tratamos como un error
                         return res.json().then(err => Promise.reject(err));
                     }
                     return res.json();
@@ -74,6 +68,8 @@ function VerificarEmailPage() {
 
 export default VerificarEmailPage;
 
+
+//v1
 // import React, { useState, useEffect } from 'react';
 // import { useSearchParams, Link } from 'react-router-dom';
 

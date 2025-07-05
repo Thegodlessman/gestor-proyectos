@@ -1,11 +1,9 @@
-// src/pages/Dashboard.jsx
 
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { rpcCall } from '../services/api';
 
-// --- Componentes de PrimeReact para la nueva UI ---
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -50,7 +48,6 @@ const DashboardPage = () => {
         <>
             <Toast ref={toast} />
             <div>
-                {/* --- Cabecera del Dashboard --- */}
                 <div className="flex flex-column sm:flex-row justify-content-between align-items-start mb-5 gap-3">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 m-0">Dashboard</h1>
@@ -62,9 +59,7 @@ const DashboardPage = () => {
                     </div>
                 </div>
 
-                {/* --- Contenedor de Widgets con Grid Layout (CORREGIDO) --- */}
                 <div className="grid">
-                    {/* Columna Principal (8 de 12) */}
                     <div className="col-12 lg:col-8">
                         <div className="grid">
                             <div className="col-12 md:col-6">
@@ -92,7 +87,6 @@ const DashboardPage = () => {
                         </div>
                     </div>
 
-                    {/* Columna Lateral (4 de 12) */}
                     <div className="col-12 lg:col-4">
                        <div className="flex flex-column gap-4">
                            {user?.nombre_rol === 'Administrador' && (

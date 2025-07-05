@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { rpcCall } from '../services/api';
 
-// --- Componentes de PrimeReact para la nueva UI ---
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -12,9 +11,8 @@ import { Card } from 'primereact/card';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Divider } from 'primereact/divider';
 
-// Renombramos el componente para consistencia
 const RegisterPage = () => {
-    // --- Lógica y estados 100% basados en tu código funcional ---
+
     const [searchParams] = useSearchParams();
     const [token, setToken] = useState(null);
     const [validationStatus, setValidationStatus] = useState('validating');
@@ -29,7 +27,6 @@ const RegisterPage = () => {
     const toast = useRef(null);
     const navigate = useNavigate();
 
-    // Tu useEffect para validar el token (sin cambios en la lógica)
     useEffect(() => {
         const inviteToken = searchParams.get('invite_token');
         if (!inviteToken) {
@@ -52,7 +49,6 @@ const RegisterPage = () => {
         validateToken();
     }, [searchParams]);
 
-    // Tu handleSubmit para registrar al usuario (sin cambios en la lógica)
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (password !== confirmPassword) {
@@ -75,7 +71,6 @@ const RegisterPage = () => {
         }
     };
 
-    // --- Nueva función para renderizar el contenido con la UI mejorada ---
     const renderContent = () => {
         switch (validationStatus) {
             case 'validating':
@@ -124,7 +119,7 @@ const RegisterPage = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             toggleMask
                             required
-                            feedback // Muestra el medidor de fortaleza
+                            feedback 
                         />
                         <Password 
                             placeholder="Confirmar Contraseña"
@@ -132,7 +127,7 @@ const RegisterPage = () => {
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             toggleMask
                             required
-                            feedback={false} // No es necesario aquí
+                            feedback={false}
                         />
                         <Button type="submit" label="Completar Registro" loading={loading} />
                     </form>
@@ -156,6 +151,8 @@ const RegisterPage = () => {
 
 export default RegisterPage;
 
+
+//v1
 // import React, { useState, useEffect } from 'react';
 // import { Link, useSearchParams } from 'react-router-dom';
 // import { rpcCall } from '../services/api';
