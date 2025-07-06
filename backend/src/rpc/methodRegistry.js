@@ -9,8 +9,13 @@ import {
     archivarProyecto,
     listarMiembros,
     agregarMiembro,
-    eliminarMiembro
+    eliminarMiembro,
+    obtenerDetallesCompletos
 } from '../services/project.service.js';
+
+import { crearActividad } from '../services/activity.service.js';
+
+import { crearObjetivoEspecifico, crearObjetivoGeneral } from '../services/objetive.service.js';
 
 const methodRegistry = new Map();
 
@@ -29,6 +34,11 @@ methodRegistry.set('proyectos.archivar', archivarProyecto);
 methodRegistry.set('proyectos.agregarMiembro', agregarMiembro); 
 methodRegistry.set('proyectos.listarMiembros', listarMiembros); 
 methodRegistry.set('proyectos.eliminarMiembro', eliminarMiembro);
+methodRegistry.set('proyectos.obtenerDetallesCompletos', obtenerDetallesCompletos);
+
+methodRegistry.set('objetivos.crearGeneral', crearObjetivoGeneral);
+methodRegistry.set('objetivos.crearEspecifico', crearObjetivoEspecifico);
+methodRegistry.set('actividades.crear', crearActividad);
 
 methodRegistry.set('permisos.obtenerMatriz', obtenerMatrizDePermisos);
 methodRegistry.set('permisos.actualizar', actualizarPermiso);

@@ -318,3 +318,98 @@ export const eliminarMiembro = async (params, usuarioSesion) => {
 
     return { message: 'Miembro eliminado del proyecto exitosamente.' };
 };
+
+/**
+ * Obtiene todos los detalles de un proyecto, incluyendo sus objetivos y actividades,
+ * en una estructura anidada.
+ * @param {object} params - { proyecto_id }
+ * @param {object} usuarioSesion - El usuario de la sesión.
+ * @returns {object} Un objeto con toda la información del proyecto.
+ */
+export const obtenerDetallesCompletos = async (params, usuarioSesion) => {
+    const { proyecto_id } = params;
+    const { empresa_id } = usuarioSesion;
+
+    // 1. Obtener los detalles básicos del proyecto (y verificar permisos)
+    const proyectoPromise = db.query(
+        'SELECT * FROM proyectos WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL',
+        [proyecto_id, empresa_id]
+    );
+
+    // 2. Obtener todos los objetivos generales de ese proyecto
+    const objetivosGeneralesPromise = db.query(
+        'SELECT * FROM objetivos_generales WHERE proyecto_id = $1 ORDER BY fecha_creacion',
+        [proyecto_id]
+    );
+    
+    // 3. Obtener todos los objetivos específicos de ese proyecto
+    const objetivosEspecificosPromise = db.query(
+        `SELECT oe.* FROM objetivos_especificos oe
+         JOIN objetivos_generales og ON oe.objetivo_general_id = og.id
+         WHERE og.proyecto_id = $1 ORDER BY oe.fecha_creacion`,
+        [proyecto_id]
+    );
+
+    // 4. Obtener todas las actividades de ese proyecto
+    const actividadesPromise = db.query(
+        'SELECT * FROM actividades WHERE proyecto_id = $1 ORDER BY fecha_creacion',
+        [proyecto_id]
+    );
+
+    // Ejecutamos todas las consultas en paralelo para mayor eficiencia
+    const [
+        proyectoResult,
+        objetivosGeneralesResult,
+        objetivosEspecificosResult,
+        actividadesResult
+    ] = await Promise.all([
+        proyectoPromise,
+        objetivosGeneralesPromise,
+        objetivosEspecificosPromise,
+        actividadesPromise
+    ]);
+
+    if (proyectoResult.rowCount === 0) {
+        throw new Error('Proyecto no encontrado o no tienes permiso para verlo.');
+    }
+
+    // --- Ensamblaje de la Respuesta ---
+    const proyecto = proyectoResult.rows[0];
+    const actividades = actividadesResult.rows;
+    const objetivosEspecificos = objetivosEspecificosResult.rows;
+    const objetivosGenerales = objetivosGeneralesResult.rows;
+
+    // Agrupamos los objetivos específicos por su padre (objetivo general)
+    const especificosPorGeneral = new Map();
+    objetivosEspecificos.forEach(oe => {
+        if (!especificosPorGeneral.has(oe.objetivo_general_id)) {
+            especificosPorGeneral.set(oe.objetivo_general_id, []);
+        }
+        especificosPorGeneral.get(oe.objetivo_general_id).push(oe);
+    });
+
+    // Agrupamos las actividades por su objetivo específico (si lo tienen)
+    const actividadesPorEspecifico = new Map();
+    actividades.forEach(act => {
+        const key = act.objetivo_especifico_id || 'sin_objetivo';
+        if (!actividadesPorEspecifico.has(key)) {
+            actividadesPorEspecifico.set(key, []);
+        }
+        actividadesPorEspecifico.get(key).push(act);
+    });
+
+    // Construimos la estructura final anidada
+    proyecto.objetivos_generales = objetivosGenerales.map(og => {
+        const especificos = especificosPorGeneral.get(og.id) || [];
+        og.objetivos_especificos = especificos.map(oe => {
+            oe.actividades = actividadesPorEspecifico.get(oe.id) || [];
+            return oe;
+        });
+        return og;
+    });
+
+    // Añadimos las actividades que no están asociadas a ningún objetivo específico
+    proyecto.actividades_sin_objetivo = actividadesPorEspecifico.get('sin_objetivo') || [];
+
+    return proyecto;
+};
