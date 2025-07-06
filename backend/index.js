@@ -8,6 +8,7 @@ import { updateSecurityCache } from './src/services/security.service.js';
 import authRoutes from './src/routes/auth.routes.js';
 import securityRoutes from './src/routes/security.routes.js';
 import rpcRoutes from './src/routes/rpc.routes.js';
+import utilityRoutes from './src/routes/utility.routes.js'
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.get('/api', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/security', securityRoutes); 
 app.use('/api/rpc', rpcRoutes);
+app.use('/api/utilities', utilityRoutes);
 
 const PORT = process.env.PORT || 3000;
 
