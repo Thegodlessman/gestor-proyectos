@@ -82,3 +82,32 @@ export const registrarUsuarioConInvitacion = async (params) => {
         client.release();
     }
 };
+
+/**
+ * Lista todos los usuarios verificados de la empresa del usuario en sesión.
+ * @param {object} params - No se usan parámetros.
+ * @param {object} usuarioSesion - El objeto de usuario de la sesión actual.
+ * @returns {Array} Un array de usuarios con su id, nombre completo y email.
+ */
+export const listarUsuariosVerificadosPorEmpresa = async (params, usuarioSesion) => {
+    const { empresa_id } = usuarioSesion;
+
+    const query = `
+        SELECT 
+            u.id,
+            p.nombre,
+            p.apellido,
+            u.email
+        FROM 
+            usuarios u
+        JOIN 
+            perfiles p ON u.id = p.usuario_id
+        WHERE 
+            u.empresa_id = $1 AND u.correo_verificado = true
+        ORDER BY 
+            p.nombre, p.apellido;
+    `;
+
+    const { rows } = await db.query(query, [empresa_id]);
+    return rows;
+};
