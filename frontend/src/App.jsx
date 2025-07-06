@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -6,7 +7,8 @@ import Security from "./pages/Security";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerificarEmail from "./pages/VerificarEmail";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ProjectsPage from "./pages/ProjectsPage"; // <-- Importa la nueva página de Proyectos
+import ProjectDetailPage from "./pages/ProjectDetailPage";
+import ProjectsPage from "./pages/ProjectsPage"; 
 import AdminPermissionsPage from './pages/AdminPermissionsPage';
 
 function App() {
@@ -18,11 +20,11 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verificar-email" element={<VerificarEmail />} />
 
-        {/* --- La ruta protegida ahora es más simple --- */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects" element={<ProjectsPage />} /> {/* <-- RUTA AÑADIDA */}
+          <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/security" element={<Security />} />
+          <Route path="project/:id" element={<ProjectDetailPage />} />
           <Route path="/admin/permisos" element={<AdminPermissionsPage/>}/>
         </Route>
       </Routes>

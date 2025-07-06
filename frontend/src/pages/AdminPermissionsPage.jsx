@@ -27,7 +27,6 @@ function AdminPermissionsPage() {
     const handlePermissionChange = async (rol_nombre, opcion_id, permiso_id, nuevo_estado) => {
         setMessage({ type: 'info', text: 'Actualizando permiso...' });
 
-        // Encontramos el ID del rol a partir de su nombre
         const rol = rolesList.find(r => r.nombre_rol === rol_nombre);
         if (!rol) {
             setMessage({ type: 'danger', text: 'Error: Rol no encontrado.' });
@@ -35,7 +34,6 @@ function AdminPermissionsPage() {
         }
 
         try {
-            // Llamamos al backend para actualizar el permiso en la BD y en el caché
             const result = await rpcCall('permisos.actualizar', {
                 rol_id: rol.id,
                 opcion_id: opcion_id,

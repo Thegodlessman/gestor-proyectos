@@ -1,23 +1,20 @@
-// src/components/ProtectedRoute.jsx
 
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import AppLayout from '../layouts/AppLayout'; // <-- Importamos el Layout aquí
+import AppLayout from '../layouts/AppLayout'; 
 
 const ProtectedRoute = () => {
     const { isAuthenticated, isLoading } = useAuth();
 
     if (isLoading) {
-        return <h1>Cargando...</h1>; // O un componente de Spinner
+        return <h1>Cargando...</h1>; 
     }
 
     if (!isAuthenticated && !isLoading) {
         return <Navigate to="/login" replace />;
     }
 
-    // Si está autenticado, renderiza el Layout principal.
-    // El componente <Outlet/> dentro de AppLayout se encargará de mostrar la página correcta (Dashboard, etc.)
     return <AppLayout />;
 };
 
