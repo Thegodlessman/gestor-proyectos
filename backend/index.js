@@ -2,64 +2,52 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import db from './src/config/db.js'; 
-import { updateSecurityCache } from './src/services/security.service.js';
+
+import dataAccess from './src/data/DataAccess.js'; 
+import Security from './src/security/Security.js'; 
 
 import authRoutes from './src/routes/auth.routes.js';
-import securityRoutes from './src/routes/security.routes.js';
-import rpcRoutes from './src/routes/rpc.routes.js';
-import utilityRoutes from './src/routes/utility.routes.js'
+import utilityRoutes from './src/routes/utility.routes.js';
+import createToProcessRouter from './src/routes/toProcess.routes.js';
 
 const app = express();
 
-// Middlewares
-app.use(cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuración de la Sesión
-const PgStore = connectPgSimple(session);
-const sessionStore = new PgStore({
-    pool: db.getPool(), 
-    tableName: 'session',
-});
-
-app.use(session({
-    store: sessionStore, // Le decimos a express-session que use almacén de PG
-    secret: process.env.SESSION_SECRET,
-    resave: false, // No guardar la sesión si no ha cambiado
-    saveUninitialized: false, // No crear sesión para usuarios que no han iniciado sesión
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24, // Duración de la cookie
-        httpOnly: true, // La cookie no es accesible desde JavaScript en el frontend
-    }
-}));
-
-// Rutas de la API
-app.get('/api', (req, res) => {
-    res.json({ message: "Bienvenido al API del Gestor de Proyectos" });
-});
-
-app.use('/api/auth', authRoutes);
-app.use('/api/security', securityRoutes); 
-app.use('/api/rpc', rpcRoutes);
-app.use('/api/utilities', utilityRoutes);
-
-const PORT = process.env.PORT || 3000;
-
 const startServer = async () => {
     try {
-        await updateSecurityCache()
+        const security = new Security();
 
+        await security.loadAllPermissions();
+
+        app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+        app.use(express.json());
+
+        const PgStore = connectPgSimple(session);
+        const sessionStore = new PgStore({ pool: dataAccess.pool, tableName: 'session' });
+        app.use(session({
+            store: sessionStore,
+            secret: process.env.SESSION_SECRET,
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                maxAge: 1000 * 60 * 60 * 24,
+                secure: process.env.NODE_ENV === 'production',
+                httpOnly: true,
+                sameSite: 'lax'
+            }
+        }));
+
+        app.use('/api/auth', authRoutes);
+        app.use('/api/utilities', utilityRoutes);
+        
+        app.use('/toProcess', createToProcessRouter(security));
+
+        const PORT = process.env.PORT || 3001;
         app.listen(PORT, () => {
-            console.log(`SERVER BACKEND ON PORT: ${PORT}`);
+            console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
         });
+
     } catch (error) {
-        console.error('No se pudo iniciar el servidor.', error);
+        console.error('Fallo al iniciar el servidor:', error);
     }
 };
 
