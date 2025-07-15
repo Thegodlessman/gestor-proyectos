@@ -12,10 +12,10 @@ export const login = async (req, res) => {
 
     try {
         const queryText = `
-            SELECT u.*, p.nombre, p.apellido, r.nombre_rol -- <-- AÑADIMOS el nombre del rol
+            SELECT u.*, p.nombre, p.apellido, r.nombre_rol
             FROM usuarios u
             JOIN perfiles p ON u.id = p.usuario_id
-            JOIN roles r ON u.rol_id = r.id -- <-- AÑADIMOS este JOIN
+            JOIN roles r ON u.rol_id = r.id 
             WHERE u.email = $1; 
         `;
         const { rows } = await db.query(queryText, [email]);
