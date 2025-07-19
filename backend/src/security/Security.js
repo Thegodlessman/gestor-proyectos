@@ -43,7 +43,25 @@ class Security {
     async executeMethod(req, res) {
         const { objectName, methodName, params, tx } = req.body;
         const usuario = req.session.usuario;
-        const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
+
+        if (!objectName || !methodName || !tx) {
+            const error = new Error('Los campos objectName, methodName y tx son requeridos.');
+            return res.status(400).json(formatError(tx || 'unknown', error, error.message));
+        }
+
+        const fullMethodName = `${objectName.toLowerCase()}.${methodName.toLowerCase()}`;
+        
+        const publicMethods = ['invitation.validartoken', 'user.registrarconinvitacion'];
+        let tienePermiso = publicMethods.includes(fullMethodName);
+
+        if (!tienePermiso && usuario) {
+            tienePermiso = this.getPermission(usuario.rol_id, fullMethodName);
+        }
+
+        if (!tienePermiso) {
+            const error = new Error('No tienes permiso para ejecutar este método.');
+            return res.status(403).json(formatError(tx, error, 'Acceso denegado.'));
+        }
 
         try {
             const boPath = `../Objects/${objectName}.js`;

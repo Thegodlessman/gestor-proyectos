@@ -57,7 +57,7 @@ const RegisterPage = () => {
         }
         setLoading(true);
         try {
-            const result = await rpcCall('auth.register', {
+            const result = await rpcCall('User', 'registrarConInvitacion', {
                 token_invitacion: token,
                 nombre,
                 apellido,
