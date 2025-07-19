@@ -33,5 +33,14 @@
   "proyecto_usuarios_eliminarMiembro": "DELETE FROM proyecto_usuarios pu USING proyectos p WHERE pu.proyecto_id = p.id AND pu.proyecto_id = $1 AND pu.usuario_id = $2 AND p.empresa_id = $3",
 
   "rolesProyecto_buscarPorNombre": "SELECT id FROM roles_proyecto WHERE nombre_rol_proyecto = $1",
-  "seguridad_obtenerMatrizPermisos": "SELECT rp.rol_id, r.nombre_rol, m.nombre_metodo, o.nombre_opcion, p.nombre_permiso FROM rol_permisos rp JOIN roles r ON rp.rol_id = r.id JOIN opciones o ON rp.opcion_id = o.id JOIN permisos p ON rp.permiso_id = p.id JOIN metodos_rpc m ON o.id = m.opcion_id AND p.id = m.permiso_id WHERE rp.habilitado = true"
+  "seguridad_obtenerMatrizPermisos": "SELECT rp.rol_id, r.nombre_rol, m.nombre_metodo, o.nombre_opcion, p.nombre_permiso FROM rol_permisos rp JOIN roles r ON rp.rol_id = r.id JOIN opciones o ON rp.opcion_id = o.id JOIN permisos p ON rp.permiso_id = p.id JOIN metodos_rpc m ON o.id = m.opcion_id AND p.id = m.permiso_id WHERE rp.habilitado = true",
+  "objetivos_crearGeneral": "INSERT INTO objetivos_generales (proyecto_id, descripcion) VALUES ($1, $2) RETURNING *",
+  
+  "objetivos_crearEspecifico": "INSERT INTO objetivos_especificos (objetivo_general_id, descripcion) VALUES ($1, $2) RETURNING *",
+  "objetivos_verificarPertenencia": "SELECT og.id FROM objetivos_generales og JOIN proyectos p ON og.proyecto_id = p.id WHERE og.id = $1 AND p.empresa_id = $2",
+  
+  "actividades_crear": "INSERT INTO actividades (proyecto_id, objetivo_especifico_id, descripcion, fecha_fin_estimada, prioridad_id, estado_actividad_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+  "estados_actividad_buscarPendiente": "SELECT id FROM estados_actividad WHERE nombre_estado = 'Pendiente'"
+
+  
 }

@@ -39,7 +39,7 @@ async function fetchApi(endpoint, options = {}) {
  */
 export const rpcCall = (objectName, methodName, params = {}) => {
     const tx = uuidv4();
-    // La ruta ahora es /toProcess, tal como lo quiere el profesor.
+    
     return fetchApi('/toProcess', {
         method: 'POST',
         body: JSON.stringify({ objectName, methodName, params, tx }),

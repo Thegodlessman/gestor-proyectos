@@ -128,6 +128,46 @@ class Project {
 
         return { message: 'Miembro eliminado del proyecto exitosamente.' };
     }
+
+    async crearGeneral(params, usuarioSesion) {
+        const { proyecto_id, descripcion } = params;
+        if (!proyecto_id || !descripcion) throw new Error('Se requiere el ID del proyecto y la descripción.');
+
+        const proyectoCheck = await this.dataAccess.exe('proyectos_buscarSimple', [proyecto_id, usuarioSesion.empresa_id]);
+        if (proyectoCheck.rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
+
+        const { rows } = await this.dataAccess.exe('objetivos_crearGeneral', [proyecto_id, descripcion]);
+        return rows[0];
+    }
+
+    async crearEspecifico(params, usuarioSesion) {
+        const { objetivo_general_id, descripcion } = params;
+        if (!objetivo_general_id || !descripcion) throw new Error('Se requiere el ID del objetivo general y la descripción.');
+
+        const objGeneralCheck = await this.dataAccess.exe('objetivos_verificarPertenencia', [objetivo_general_id, usuarioSesion.empresa_id]);
+        if (objGeneralCheck.rowCount === 0) throw new Error('Objetivo general no encontrado o no tienes permiso.');
+
+        const { rows } = await this.dataAccess.exe('objetivos_crearEspecifico', [objetivo_general_id, descripcion]);
+        return rows[0];
+    }
+
+    async crearActividad(params, usuarioSesion) {
+        const { proyecto_id, objetivo_especifico_id, descripcion, fecha_fin_estimada, prioridad_id } = params;
+        if (!proyecto_id || !descripcion || !fecha_fin_estimada || !prioridad_id) {
+            throw new Error('Proyecto, descripción, fecha de fin y prioridad son requeridos.');
+        }
+
+        const proyectoCheck = await this.dataAccess.exe('proyectos_buscarSimple', [proyecto_id, usuarioSesion.empresa_id]);
+        if (proyectoCheck.rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
+        
+        const estadoResult = await this.dataAccess.exe('estados_actividad_buscarPendiente');
+        if (estadoResult.rowCount === 0) throw new Error("Estado 'Pendiente' no encontrado.");
+        const estado_inicial_id = estadoResult.rows[0].id;
+        
+        const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_fin_estimada, prioridad_id, estado_inicial_id];
+        const { rows } = await this.dataAccess.exe('actividades_crear', values);
+        return rows[0];
+    }
 }
 
 export default Project;
