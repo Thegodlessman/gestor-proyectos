@@ -4,7 +4,7 @@ class Project {
     }
 
     async crear(params, usuarioSesion) {
-        const { nombre, descripcion, fecha_fin_estimada, miembros } = params;
+        const { nombre, descripcion, fecha_fin_estimada, miembros, prioridad_id} = params;
         const { id: usuario_id, empresa_id } = usuarioSesion;
 
         if (!nombre || !fecha_fin_estimada) {
@@ -20,7 +20,7 @@ class Project {
 
             const nuevoProyectoResult = await client.query(
                 this.dataAccess.queries['proyectos_crear'],
-                [nombre, descripcion || null, fecha_fin_estimada, estadoResult.rows[0].id, usuario_id, empresa_id]
+                [nombre, descripcion || null, fecha_fin_estimada, estadoResult.rows[0].id, usuario_id, empresa_id, prioridad_id]
             );
             const nuevoProyecto = nuevoProyectoResult.rows[0];
 

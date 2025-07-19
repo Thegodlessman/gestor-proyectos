@@ -37,7 +37,7 @@ const RegisterPage = () => {
         setToken(inviteToken);
         const validateToken = async () => {
             try {
-                const response = await rpcCall('invitaciones.validarToken', { token: inviteToken });
+                const response = await rpcCall('Invitation', 'validarToken', { token: inviteToken });
                 setEmail(response.email);
                 setValidationStatus('valid');
                 setStatusMessage(`Completa tu registro para: ${response.email}`);

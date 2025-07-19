@@ -40,7 +40,7 @@ const ProjectsPage = () => {
     const fetchProjects = useCallback(async () => {
         setLoading(true);
         try {
-            const result = await rpcCall('proyectos.listar');
+            const result = await rpcCall('Project', 'listar');
             const projectsWithDefaults = Array.isArray(result) 
                 ? result.map(p => ({ ...p, progreso: p.progreso || 0 })) // Añadimos progreso por defecto si no viene
                 : [];
@@ -71,7 +71,7 @@ const ProjectsPage = () => {
                 prioridad_id: newProjectPriority
             };
             
-            await rpcCall('proyectos.crear', params);
+            await rpcCall('Project', 'crear', params);
             
             toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Proyecto creado correctamente.' });
             
