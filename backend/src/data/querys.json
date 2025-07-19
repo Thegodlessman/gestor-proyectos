@@ -19,7 +19,7 @@
   
   "proyectos_listarPorUsuario": "SELECT p.*, creator_profile.nombre || ' ' || creator_profile.apellido AS nombre_responsable, ep.nombre_estado AS estado, pr.nombre_prioridad AS prioridad FROM proyectos p JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id JOIN estados_proyecto ep ON p.estado_proyecto_id = ep.id JOIN perfiles creator_profile ON p.usuario_creador_id = creator_profile.usuario_id LEFT JOIN prioridades pr ON p.prioridad_id = pr.id WHERE pu.usuario_id = $1 AND p.empresa_id = $2 AND p.fecha_eliminacion IS NULL ORDER BY p.fecha_creacion DESC",
   
-  "proyectos_crear": "INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id) VALUES ($1, $2, NOW(), $3, $4, $5, $6) RETURNING *",
+  "proyectos_crear": "INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id, prioridad_id) VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7) RETURNING *",
   
   "proyectos_obtenerPorId": "SELECT p.*, creator_profile.nombre || ' ' || creator_profile.apellido AS nombre_responsable, ep.nombre_estado AS estado, pr.nombre_prioridad AS prioridad FROM proyectos p JOIN estados_proyecto ep ON p.estado_proyecto_id = ep.id JOIN perfiles creator_profile ON p.usuario_creador_id = creator_profile.usuario_id LEFT JOIN prioridades pr ON p.prioridad_id = pr.id WHERE p.id = $1 AND p.empresa_id = $2 AND p.fecha_eliminacion IS NULL",
   "proyectos_actualizar": "UPDATE proyectos SET nombre_proyecto = $1, descripcion = $2, fecha_fin_estimada = $3, prioridad_id = $4, fecha_actualizacion = NOW() WHERE id = $5 AND empresa_id = $6 AND fecha_eliminacion IS NULL RETURNING *",

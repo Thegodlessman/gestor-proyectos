@@ -22,7 +22,7 @@ const DashboardPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const result = await rpcCall('invitaciones.crear', { email: inviteEmail });
+            const result = await rpcCall('Invitation', 'crear', { email: inviteEmail });
             toast.current.show({ severity: 'success', summary: 'Éxito', detail: result.message });
             setInviteEmail(''); 
         } catch (error) {

@@ -76,7 +76,7 @@ const ProjectDetailPage = () => {
             setLoading(true);
             setError(null);
             try {
-                const result = await rpcCall('proyectos.obtenerPorId', { id: id });
+                const result = await rpcCall('Project', 'obtenerPorId', { id: id });
                 
                 setProjectData(result);
                 const transformedNodes = transformDataToNodes(result);
@@ -207,7 +207,7 @@ const ProjectDetailPage = () => {
             <div className="flex justify-content-between align-items-center mb-4">
                 <div>
                     <Button icon="pi pi-arrow-left" label="Volver a Proyectos" onClick={() => navigate('/projects')} className="p-button-text" />
-                    <h1 className="text-3xl font-bold text-slate-800 mt-2">{projectData?.nombre}</h1>
+                    <h1 className="text-3xl font-bold text-slate-800 mt-2">{projectData?.nombre_proyecto}</h1>
                     <p className="text-gray-500">{projectData?.descripcion}</p>
                 </div>
                 <Button label="Añadir Objetivo General" icon="pi pi-plus-circle" />

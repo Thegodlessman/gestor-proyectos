@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000';
 
 /**
  * 
@@ -32,18 +32,17 @@ async function fetchApi(endpoint, options = {}) {
 }
 
 /**
- * @param {string} method -
- * @param {object} params -
- * @returns {Promise<any>}
+ * Llama a un método del backend usando el patrón RPC.
+ * @param {string} objectName - El nombre del Business Object (ej. 'Project').
+ * @param {string} methodName - El nombre del método a ejecutar (ej. 'crear').
+ * @param {object} params - Los parámetros para el método.
  */
-
-export const rpcCall = (method, params = {}) => {
+export const rpcCall = (objectName, methodName, params = {}) => {
     const tx = uuidv4();
-
-    return fetchApi('/rpc', {
+    // La ruta ahora es /toProcess, tal como lo quiere el profesor.
+    return fetchApi('/toProcess', {
         method: 'POST',
-
-        body: JSON.stringify({ method, params, tx }),
+        body: JSON.stringify({ objectName, methodName, params, tx }),
     });
 };
 
