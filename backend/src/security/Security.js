@@ -21,6 +21,7 @@ class Security {
             }
 
             console.log(`Mapa de permisos cargado exitosamente. ${this.permissionMap.size} reglas activas.`);
+            console.log(this.permissionMap)
         } catch (error) {
             console.error('Error Crítico: No se pudo construir el caché de seguridad.', error);
             process.exit(1);
@@ -35,6 +36,7 @@ class Security {
             return false;
         }
         const key = `${rol_id}-${fullMethodName}`;
+        console.log(key)
         return this.permissionMap.has(key);
     }
 
@@ -50,7 +52,7 @@ class Security {
             return res.status(400).json(formatError(tx || 'unknown', error, error.message));
         }
 
-        const fullMethodName = `${objectName.toLowerCase()}.${methodName.toLowerCase()}`;
+        const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
         
         const publicMethods = ['invitation.validartoken', 'user.registrarconinvitacion'];
         let tienePermiso = publicMethods.includes(fullMethodName);

@@ -129,7 +129,7 @@ class Project {
         return { message: 'Miembro eliminado del proyecto exitosamente.' };
     }
 
-    async crearGeneral(params, usuarioSesion) {
+    async crearObjetivoGeneral(params, usuarioSesion) {
         const { proyecto_id, descripcion } = params;
         if (!proyecto_id || !descripcion) throw new Error('Se requiere el ID del proyecto y la descripción.');
 
@@ -140,7 +140,7 @@ class Project {
         return rows[0];
     }
 
-    async crearEspecifico(params, usuarioSesion) {
+    async crearObjetivoEspecifico(params, usuarioSesion) {
         const { objetivo_general_id, descripcion } = params;
         if (!objetivo_general_id || !descripcion) throw new Error('Se requiere el ID del objetivo general y la descripción.');
 
@@ -167,6 +167,81 @@ class Project {
         const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_fin_estimada, prioridad_id, estado_inicial_id];
         const { rows } = await this.dataAccess.exe('actividades_crear', values);
         return rows[0];
+    }
+
+    /**
+     * Obtiene la jerarquía completa de un proyecto, incluyendo sus objetivos y actividades.
+     * @param {object} params - { proyecto_id }
+     * @param {object} usuarioSesion - El usuario de la sesión.
+     * @returns {object} Un objeto con toda la información anidada del proyecto.
+     */
+    async obtenerJerarquia(params, usuarioSesion) {
+        const { proyecto_id } = params;
+        const { empresa_id } = usuarioSesion;
+
+        // Verificamos que el proyecto exista y pertenezca a la empresa
+        const proyectoResult = await this.dataAccess.exe('proyectos_obtenerPorId', [proyecto_id, empresa_id]);
+        if (proyectoResult.rowCount === 0) {
+            throw new Error('Proyecto no encontrado o no tienes permiso para verlo.');
+        }
+
+        // Consultas para obtener todos los elementos de la jerarquía en paralelo
+        const objetivosGeneralesPromise = this.dataAccess.exe('objetivos_listarPorProyecto', [proyecto_id]);
+        const objetivosEspecificosPromise = this.dataAccess.exe('objetivosEspecificos_listarPorProyecto', [proyecto_id]);
+        const actividadesPromise = this.dataAccess.exe('actividades_listarPorProyecto', [proyecto_id]);
+        
+        const [
+            objetivosGeneralesResult,
+            objetivosEspecificosResult,
+            actividadesResult
+        ] = await Promise.all([objetivosGeneralesPromise, objetivosEspecificosPromise, actividadesPromise]);
+
+        // Ensamblaje de la respuesta
+        const proyecto = proyectoResult.rows[0];
+        const actividades = actividadesResult.rows;
+        const objetivosEspecificos = objetivosEspecificosResult.rows;
+        const objetivosGenerales = objetivosGeneralesResult.rows;
+
+        // Agrupamos actividades por su objetivo específico
+        const actividadesMap = new Map();
+        actividades.forEach(act => {
+            const key = act.objetivo_especifico_id || 'sin_objetivo';
+            if (!actividadesMap.has(key)) actividadesMap.set(key, []);
+            actividadesMap.get(key).push(act);
+        });
+
+        // Agrupamos objetivos específicos por su objetivo general y les adjuntamos sus actividades
+        const especificosMap = new Map();
+        objetivosEspecificos.forEach(oe => {
+            oe.actividades = actividadesMap.get(oe.id) || [];
+            if (!especificosMap.has(oe.objetivo_general_id)) especificosMap.set(oe.objetivo_general_id, []);
+            especificosMap.get(oe.objetivo_general_id).push(oe);
+        });
+
+        // Ensamblamos la estructura final
+        proyecto.objetivos_generales = objetivosGenerales.map(og => {
+            og.objetivos_especificos = especificosMap.get(og.id) || [];
+            return og;
+        });
+        proyecto.actividades_sin_objetivo = actividadesMap.get('sin_objetivo') || [];
+        
+        return proyecto;
+    }
+
+    /**
+     * Lista todas las prioridades disponibles en el sistema.
+     */
+    async listarPrioridades(params, usuarioSesion) {
+        const { rows } = await this.dataAccess.exe('prioridades_listar');
+        return rows;
+    }
+
+    /**
+     * Lista todos los estados de actividad disponibles.
+     */
+    async listarEstadosActividad(params, usuarioSesion) {
+        const { rows } = await this.dataAccess.exe('estados_actividad_listar');
+        return rows;
     }
 }
 

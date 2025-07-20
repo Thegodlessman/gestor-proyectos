@@ -1,46 +1,37 @@
 {
   "usuarios_buscarPorEmail": "SELECT u.*, p.nombre, p.apellido, r.nombre_rol FROM usuarios u JOIN perfiles p ON u.id = p.usuario_id JOIN roles r ON u.rol_id = r.id WHERE u.email = $1;",
   "usuarios_crear": "INSERT INTO usuarios (email, password_hash, rol_id, empresa_id, token_verificacion, expiracion_token_verificacion) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-  
   "perfiles_crear": "INSERT INTO perfiles (usuario_id, nombre, apellido) VALUES ($1, $2, $3)",
-  
   "empresas_buscarPorNombre": "SELECT id FROM empresas WHERE nombre_empresa = $1",
   "empresas_crear": "INSERT INTO empresas (nombre_empresa) VALUES ($1) RETURNING id",
-  
   "roles_buscarMiembroDeEquipo": "SELECT id FROM roles WHERE nombre_rol = 'Miembro de Equipo'",
-  
   "invitaciones_buscarActiva": "SELECT email, empresa_id FROM invitaciones WHERE token_invitacion = $1 AND fue_usado = false AND expiracion_token > NOW()",
   "invitaciones_crear": "INSERT INTO invitaciones (empresa_id, email, token_invitacion, expiracion_token) VALUES ($1, $2, $3, $4) RETURNING *",
   "invitaciones_marcarComoUsada": "UPDATE invitaciones SET fue_usado = true WHERE token_invitacion = $1",
   "invitaciones_eliminarPorEmail": "DELETE FROM invitaciones WHERE empresa_id = $1 AND email = $2",
-  
   "verificacion_buscarPorToken": "SELECT * FROM usuarios WHERE token_verificacion = $1 AND expiracion_token_verificacion > NOW()",
   "verificacion_confirmarUsuario": "UPDATE usuarios SET correo_verificado = true, token_verificacion = NULL, expiracion_token_verificacion = NULL WHERE id = $1",
-  
   "proyectos_listarPorUsuario": "SELECT p.*, creator_profile.nombre || ' ' || creator_profile.apellido AS nombre_responsable, ep.nombre_estado AS estado, pr.nombre_prioridad AS prioridad FROM proyectos p JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id JOIN estados_proyecto ep ON p.estado_proyecto_id = ep.id JOIN perfiles creator_profile ON p.usuario_creador_id = creator_profile.usuario_id LEFT JOIN prioridades pr ON p.prioridad_id = pr.id WHERE pu.usuario_id = $1 AND p.empresa_id = $2 AND p.fecha_eliminacion IS NULL ORDER BY p.fecha_creacion DESC",
-  
   "proyectos_crear": "INSERT INTO proyectos (nombre_proyecto, descripcion, fecha_inicio, fecha_fin_estimada, estado_proyecto_id, usuario_creador_id, empresa_id, prioridad_id) VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7) RETURNING *",
-  
   "proyectos_obtenerPorId": "SELECT p.*, creator_profile.nombre || ' ' || creator_profile.apellido AS nombre_responsable, ep.nombre_estado AS estado, pr.nombre_prioridad AS prioridad FROM proyectos p JOIN estados_proyecto ep ON p.estado_proyecto_id = ep.id JOIN perfiles creator_profile ON p.usuario_creador_id = creator_profile.usuario_id LEFT JOIN prioridades pr ON p.prioridad_id = pr.id WHERE p.id = $1 AND p.empresa_id = $2 AND p.fecha_eliminacion IS NULL",
   "proyectos_actualizar": "UPDATE proyectos SET nombre_proyecto = $1, descripcion = $2, fecha_fin_estimada = $3, prioridad_id = $4, fecha_actualizacion = NOW() WHERE id = $5 AND empresa_id = $6 AND fecha_eliminacion IS NULL RETURNING *",
   "proyectos_archivar": "UPDATE proyectos SET fecha_eliminacion = NOW() WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL RETURNING *",
-  
   "proyectos_buscarSimple": "SELECT id FROM proyectos WHERE id = $1 AND empresa_id = $2 AND fecha_eliminacion IS NULL",
   "usuarios_buscarPorEmailEnEmpresa": "SELECT id FROM usuarios WHERE email = $1 AND empresa_id = $2",
   "proyecto_usuarios_buscarMiembro": "SELECT id FROM proyecto_usuarios WHERE proyecto_id = $1 AND usuario_id = $2",
   "proyecto_usuarios_insertar": "INSERT INTO proyecto_usuarios (proyecto_id, usuario_id, rol_proyecto_id) VALUES ($1, $2, $3) RETURNING *",
   "proyecto_usuarios_listarMiembros": "SELECT p.nombre, p.apellido, u.email, rp.nombre_rol_proyecto, pu.fecha_asignacion FROM proyecto_usuarios pu JOIN usuarios u ON pu.usuario_id = u.id JOIN perfiles p ON u.id = p.usuario_id JOIN roles_proyecto rp ON pu.rol_proyecto_id = rp.id WHERE pu.proyecto_id = $1 AND u.empresa_id = $2 ORDER BY p.nombre",
   "proyecto_usuarios_eliminarMiembro": "DELETE FROM proyecto_usuarios pu USING proyectos p WHERE pu.proyecto_id = p.id AND pu.proyecto_id = $1 AND pu.usuario_id = $2 AND p.empresa_id = $3",
-
   "rolesProyecto_buscarPorNombre": "SELECT id FROM roles_proyecto WHERE nombre_rol_proyecto = $1",
   "seguridad_obtenerMatrizPermisos": "SELECT rp.rol_id, r.nombre_rol, m.nombre_metodo, o.nombre_opcion, p.nombre_permiso FROM rol_permisos rp JOIN roles r ON rp.rol_id = r.id JOIN opciones o ON rp.opcion_id = o.id JOIN permisos p ON rp.permiso_id = p.id JOIN metodos_rpc m ON o.id = m.opcion_id AND p.id = m.permiso_id WHERE rp.habilitado = true",
   "objetivos_crearGeneral": "INSERT INTO objetivos_generales (proyecto_id, descripcion) VALUES ($1, $2) RETURNING *",
-  
   "objetivos_crearEspecifico": "INSERT INTO objetivos_especificos (objetivo_general_id, descripcion) VALUES ($1, $2) RETURNING *",
   "objetivos_verificarPertenencia": "SELECT og.id FROM objetivos_generales og JOIN proyectos p ON og.proyecto_id = p.id WHERE og.id = $1 AND p.empresa_id = $2",
-  
   "actividades_crear": "INSERT INTO actividades (proyecto_id, objetivo_especifico_id, descripcion, fecha_fin_estimada, prioridad_id, estado_actividad_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-  "estados_actividad_buscarPendiente": "SELECT id FROM estados_actividad WHERE nombre_estado = 'Pendiente'"
-
-  
+  "estados_actividad_buscarPendiente": "SELECT id FROM estados_actividad WHERE nombre_estado = 'Pendiente'",
+  "objetivos_listarPorProyecto": "SELECT * FROM objetivos_generales WHERE proyecto_id = $1 ORDER BY fecha_creacion",
+  "objetivosEspecificos_listarPorProyecto": "SELECT oe.* FROM objetivos_especificos oe JOIN objetivos_generales og ON oe.objetivo_general_id = og.id WHERE og.proyecto_id = $1 ORDER BY oe.fecha_creacion",
+  "actividades_listarPorProyecto": "SELECT * FROM actividades WHERE proyecto_id = $1 ORDER BY fecha_creacion",
+  "prioridades_listar": "SELECT id, nombre_prioridad FROM prioridades ORDER BY id",
+    "estados_actividad_listar": "SELECT id, nombre_estado FROM estados_actividad ORDER BY id"
 }
