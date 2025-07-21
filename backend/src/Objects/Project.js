@@ -258,6 +258,14 @@ class Project {
     }
 
     /**
+     * Lista todos los roles de proyecto disponibles en el sistema.
+     */
+    async listarRolesProyecto(params, usuarioSesion) {
+        const { rows } = await this.dataAccess.exe('rolesProyecto_listar');
+        return rows;
+    }
+
+    /**
      * Lista todos los estados de actividad disponibles.
      */
     async listarEstadosActividad(params, usuarioSesion) {
