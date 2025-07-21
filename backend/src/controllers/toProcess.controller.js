@@ -3,7 +3,7 @@ import { formatError } from '../utils/response.util.js';
 export const handleRequest = (req, res, securityInstance) => { 
     const { objectName, methodName, tx } = req.body;
     const usuario = req.session.usuario;
-    const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
+    const fullMethodName = `${objectName.toLowerCase()}.${methodName.toLowerCase()}`;
     
     const publicMethods = ['invitation.validartoken', 'user.registrarconinvitacion'];
     if (publicMethods.includes(fullMethodName)) {
