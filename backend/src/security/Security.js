@@ -16,7 +16,7 @@ class Security {
 
             this.permissionMap.clear();
             for (const rule of rows) {
-                const key = `${rule.rol_id}-${rule.nombre_metodo}`;
+                const key = `${rule.rol_id}-${rule.nombre_metodo.toLowerCase()}`;
                 this.permissionMap.set(key, true);
             }
 
