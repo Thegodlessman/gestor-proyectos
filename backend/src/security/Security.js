@@ -46,53 +46,37 @@ class Security {
     async executeMethod(req, res) {
         const { objectName, methodName, params, tx } = req.body;
         const usuario = req.session.usuario;
-
-        if (!objectName || !methodName || !tx) {
-            const error = new Error('Los campos objectName, methodName y tx son requeridos.');
-            return res.status(400).json(formatError(tx || 'unknown', error, error.message));
-        }
-
-        const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
-        
-        const publicMethods = ['invitation.validartoken', 'user.registrarconinvitacion'];
-        let tienePermiso = publicMethods.includes(fullMethodName);
-
-        if (!tienePermiso && usuario) {
-            tienePermiso = this.getPermission(usuario.rol_id, fullMethodName);
-        }
-
-        if (!tienePermiso) {
-            const error = new Error('No tienes permiso para ejecutar este método.');
-            return res.status(403).json(formatError(tx, error, 'Acceso denegado.'));
-        }
-
+        const fullMethodName = `${objectName.toLowerCase()}.${methodName.toLowerCase()}`;
+    
         try {
             const boPath = `../Objects/${objectName}.js`;
             const { default: BOClass } = await import(boPath);
-
+    
             const boInstance = new BOClass(dataAccess);
-
-            if (typeof boInstance[methodName] !== 'function') {
+            const methodToExecute = methodName;
+    
+            if (typeof boInstance[methodToExecute] !== 'function') {
                 throw new Error(`El método '${methodName}' no existe en el objeto '${objectName}'.`);
             }
-
-            const result = await boInstance[methodName](params, usuario);
-
-            return res.status(200).json({ tx, status: 'OK', typeMsg: 'info', shortMsg: 'Operación exitosa', data: result });
-
+            
+            const result = await boInstance[methodToExecute](params, usuario);
+            return res.status(200).json(formatResponse(tx, result));
+    
         } catch (error) {
             let httpStatus = 500;
             let shortMsg = 'Error interno al procesar la solicitud.';
+    
             if (error.code === 'ERR_MODULE_NOT_FOUND') {
                 httpStatus = 404;
                 shortMsg = `El objeto de negocio '${objectName}' no existe.`;
-            } else if (error.message.includes('no existe en el objeto')) {
+            } 
+            else if (error.message.includes('no existe en el objeto')) {
                 httpStatus = 404;
                 shortMsg = error.message;
             }
-
-            console.error(`Error en el método ${fullMethodName} (tx: ${tx}):`, error);
-            return res.status(httpStatus).json({ tx, status: 'ERROR', typeMsg: 'error', shortMsg, longMsg: error.message, data: {} });
+    
+            console.error(`Error en método ${fullMethodName} (tx: ${tx}):`, error);
+            return res.status(httpStatus).json(formatError(tx, error, shortMsg));
         }
     }
 }
