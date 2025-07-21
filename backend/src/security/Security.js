@@ -46,7 +46,7 @@ class Security {
     async executeMethod(req, res) {
         const { objectName, methodName, params, tx } = req.body;
         const usuario = req.session.usuario;
-        const fullMethodName = `${objectName.toLowerCase()}.${methodName.toLowerCase()}`;
+        const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
     
         try {
             const boPath = `../Objects/${objectName}.js`;

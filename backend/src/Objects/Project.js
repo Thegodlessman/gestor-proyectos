@@ -4,7 +4,7 @@ class Project {
     }
 
     async crear(params, usuarioSesion) {
-        const { nombre, descripcion, fecha_fin_estimada, miembros, prioridad_id} = params;
+        const { nombre, descripcion, fecha_fin_estimada, miembros, prioridad_id } = params;
         const { id: usuario_id, empresa_id } = usuarioSesion;
 
         if (!nombre || !fecha_fin_estimada) {
@@ -54,10 +54,10 @@ class Project {
     async obtenerPorId(params, usuarioSesion) {
         const { id } = params;
         if (!id) throw new Error('Se requiere el ID del proyecto.');
-        
+
         const { rows, rowCount } = await this.dataAccess.exe('proyectos_obtenerPorId', [id, usuarioSesion.empresa_id]);
         if (rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
-        
+
         return rows[0];
     }
 
@@ -70,7 +70,7 @@ class Project {
 
         return rows[0];
     }
-    
+
     async archivar(params, usuarioSesion) {
         const { id } = params;
         if (!id) throw new Error('El ID del proyecto es requerido para archivarlo.');
@@ -95,7 +95,7 @@ class Project {
             const usuarioResult = await client.query(this.dataAccess.queries['usuarios_buscarPorEmailEnEmpresa'], [email_miembro, usuarioSesion.empresa_id]);
             if (usuarioResult.rowCount === 0) throw new Error(`No se encontró un usuario con el email '${email_miembro}' en tu empresa.`);
             const usuario_a_agregar_id = usuarioResult.rows[0].id;
-            
+
             const yaEsMiembro = await client.query(this.dataAccess.queries['proyecto_usuarios_buscarMiembro'], [proyecto_id, usuario_a_agregar_id]);
             if (yaEsMiembro.rowCount > 0) throw new Error('Este usuario ya es miembro del proyecto.');
 
@@ -122,7 +122,7 @@ class Project {
     async eliminarMiembro(params, usuarioSesion) {
         const { proyecto_id, usuario_id } = params;
         if (!proyecto_id || !usuario_id) throw new Error('Se requiere el ID del proyecto y el ID del usuario.');
-        
+
         const { rowCount } = await this.dataAccess.exe('proyecto_usuarios_eliminarMiembro', [proyecto_id, usuario_id, usuarioSesion.empresa_id]);
         if (rowCount === 0) throw new Error('No se encontró la asignación del miembro o no tienes permiso para eliminarla.');
 
@@ -159,11 +159,11 @@ class Project {
 
         const proyectoCheck = await this.dataAccess.exe('proyectos_buscarSimple', [proyecto_id, usuarioSesion.empresa_id]);
         if (proyectoCheck.rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
-        
+
         const estadoResult = await this.dataAccess.exe('estados_actividad_buscarPendiente');
         if (estadoResult.rowCount === 0) throw new Error("Estado 'Pendiente' no encontrado.");
         const estado_inicial_id = estadoResult.rows[0].id;
-        
+
         const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_fin_estimada, prioridad_id, estado_inicial_id];
         const { rows } = await this.dataAccess.exe('actividades_crear', values);
         return rows[0];
@@ -178,53 +178,74 @@ class Project {
     async obtenerJerarquia(params, usuarioSesion) {
         const { proyecto_id } = params;
         const { empresa_id } = usuarioSesion;
-
+    
         // Verificamos que el proyecto exista y pertenezca a la empresa
         const proyectoResult = await this.dataAccess.exe('proyectos_obtenerPorId', [proyecto_id, empresa_id]);
         if (proyectoResult.rowCount === 0) {
             throw new Error('Proyecto no encontrado o no tienes permiso para verlo.');
         }
-
+    
         // Consultas para obtener todos los elementos de la jerarquía en paralelo
         const objetivosGeneralesPromise = this.dataAccess.exe('objetivos_listarPorProyecto', [proyecto_id]);
         const objetivosEspecificosPromise = this.dataAccess.exe('objetivosEspecificos_listarPorProyecto', [proyecto_id]);
         const actividadesPromise = this.dataAccess.exe('actividades_listarPorProyecto', [proyecto_id]);
-        
+        const asignacionesPromise = this.dataAccess.exe('asignaciones_listarPorProyecto', [proyecto_id]);
+    
         const [
             objetivosGeneralesResult,
             objetivosEspecificosResult,
-            actividadesResult
-        ] = await Promise.all([objetivosGeneralesPromise, objetivosEspecificosPromise, actividadesPromise]);
-
-        // Ensamblaje de la respuesta
+            actividadesResult,
+            asignacionesResult
+        ] = await Promise.all([objetivosGeneralesPromise, objetivosEspecificosPromise, actividadesPromise, asignacionesPromise]);
+    
+        // --- Ensamblaje de la respuesta ---
         const proyecto = proyectoResult.rows[0];
         const actividades = actividadesResult.rows;
         const objetivosEspecificos = objetivosEspecificosResult.rows;
         const objetivosGenerales = objetivosGeneralesResult.rows;
-
+        const asignaciones = asignacionesResult.rows;
+    
+        // Agrupamos los usuarios asignados por actividad_id
+        const asignacionesMap = new Map();
+        asignaciones.forEach(asig => {
+            if (!asignacionesMap.has(asig.actividad_id)) {
+                asignacionesMap.set(asig.actividad_id, []);
+            }
+            asignacionesMap.get(asig.actividad_id).push({
+                usuario_id: asig.usuario_id,
+                nombre_completo: `${asig.nombre} ${asig.apellido}`
+            });
+        });
+    
         // Agrupamos actividades por su objetivo específico
         const actividadesMap = new Map();
         actividades.forEach(act => {
+            act.usuarios_asignados = asignacionesMap.get(act.id) || [];
             const key = act.objetivo_especifico_id || 'sin_objetivo';
-            if (!actividadesMap.has(key)) actividadesMap.set(key, []);
+            if (!actividadesMap.has(key)) {
+                actividadesMap.set(key, []);
+            }
             actividadesMap.get(key).push(act);
         });
-
+    
         // Agrupamos objetivos específicos por su objetivo general y les adjuntamos sus actividades
         const especificosMap = new Map();
         objetivosEspecificos.forEach(oe => {
             oe.actividades = actividadesMap.get(oe.id) || [];
-            if (!especificosMap.has(oe.objetivo_general_id)) especificosMap.set(oe.objetivo_general_id, []);
+            if (!especificosMap.has(oe.objetivo_general_id)) {
+                especificosMap.set(oe.objetivo_general_id, []);
+            }
             especificosMap.get(oe.objetivo_general_id).push(oe);
         });
-
+    
         // Ensamblamos la estructura final
         proyecto.objetivos_generales = objetivosGenerales.map(og => {
             og.objetivos_especificos = especificosMap.get(og.id) || [];
             return og;
         });
-        proyecto.actividades_sin_objetivo = actividadesMap.get('sin_objetivo') || [];
         
+        proyecto.actividades_sin_objetivo = actividadesMap.get('sin_objetivo') || [];
+    
         return proyecto;
     }
 
@@ -242,6 +263,23 @@ class Project {
     async listarEstadosActividad(params, usuarioSesion) {
         const { rows } = await this.dataAccess.exe('estados_actividad_listar');
         return rows;
+    }
+
+    async assignUser(params, usuarioSesion) {
+        const { actividad_id, usuario_id } = params;
+        if (!actividad_id || !usuario_id) throw new Error('Se requiere el ID de la actividad y del usuario.');
+
+        // verifica que la actividad y el usuario a asignar pertenecen al mismo proyecto y a la misma empresa del usuario en sesión.
+        const securityCheck = await this.dataAccess.exe('actividades_verificarAsignacionValida',
+            [actividad_id, usuario_id, usuarioSesion.empresa_id]
+        );
+
+        if (securityCheck.rowCount === 0) {
+            throw new Error('Asignación no válida: La actividad no existe, el usuario no pertenece al proyecto, o no tienes permiso.');
+        }
+
+        const { rows } = await this.dataAccess.exe('asignaciones_insertar', [actividad_id, usuario_id]);
+        return rows[0];
     }
 }
 
