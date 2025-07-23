@@ -4,6 +4,7 @@ import { formatError, formatResponse } from '../utils/response.util.js';
 class Security {
     constructor() {
         this.permissionMap = new Map();
+        this.boInstances = new Map(); 
     }
 
     /**
@@ -49,10 +50,16 @@ class Security {
         const fullMethodName = `${objectName.toLowerCase()}.${methodName}`;
     
         try {
-            const boPath = `../Objects/${objectName}.js`;
-            const { default: BOClass } = await import(boPath);
-    
-            const boInstance = new BOClass(dataAccess);
+            let boInstance = this.boInstances.get(objectName);
+
+            if (!boInstance) {
+                const boPath = `../Objects/${objectName}.js`;
+                const { default: BOClass } = await import(boPath);
+                boInstance = new BOClass(dataAccess);
+                this.boInstances.set(objectName, boInstance);
+                console.log(`Instancia para '${objectName}' creada y cacheada.`);
+            }
+            
             const methodToExecute = methodName;
     
             if (typeof boInstance[methodToExecute] !== 'function') {
