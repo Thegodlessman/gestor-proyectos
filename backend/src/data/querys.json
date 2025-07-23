@@ -37,5 +37,7 @@
   "actividades_verificarAsignacionValida": "SELECT p.id FROM proyectos p JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id JOIN actividades a ON p.id = a.proyecto_id WHERE a.id = $1 AND pu.usuario_id = $2 AND p.empresa_id = $3",
   "asignaciones_insertar": "INSERT INTO asignaciones_actividades (actividad_id, usuario_id) VALUES ($1, $2) RETURNING *",
   "rolesProyecto_listar": "SELECT id, nombre_rol_proyecto FROM roles_proyecto ORDER BY nombre_rol_proyecto;",
-  "asignaciones_listarPorProyecto": "SELECT aa.actividad_id, u.id as usuario_id, p.nombre, p.apellido FROM asignaciones_actividades aa JOIN usuarios u ON aa.usuario_id = u.id JOIN perfiles p ON u.id = p.usuario_id JOIN actividades a ON aa.actividad_id = a.id WHERE a.proyecto_id = $1"
+  "asignaciones_listarPorProyecto": "SELECT aa.actividad_id, u.id as usuario_id, p.nombre, p.apellido FROM asignaciones_actividades aa JOIN usuarios u ON aa.usuario_id = u.id JOIN perfiles p ON u.id = p.usuario_id JOIN actividades a ON aa.actividad_id = a.id WHERE a.proyecto_id = $1",
+  "perfiles_actualizarImagen": "UPDATE perfiles SET imagen_perfil = $1, imagen_mimetype = $2 WHERE usuario_id = $3",
+  "perfiles_obtenerImagen": "SELECT imagen_perfil, imagen_mimetype FROM perfiles WHERE usuario_id = $1"
 }
