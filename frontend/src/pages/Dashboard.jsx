@@ -10,6 +10,8 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Chart } from 'primereact/chart';
 
+import ProfileImage from '../components/ProfileImage';
+
 const DashboardPage = () => {
     const { user } = useAuth(); 
     const navigate = useNavigate();
@@ -119,6 +121,8 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            <ProfileImage />
         </>
     );
 };
