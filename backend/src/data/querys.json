@@ -31,11 +31,11 @@
   "estados_actividad_buscarPendiente": "SELECT id FROM estados_actividad WHERE nombre_estado = 'Pendiente'",
   "objetivos_listarPorProyecto": "SELECT * FROM objetivos_generales WHERE proyecto_id = $1 ORDER BY fecha_creacion",
   "objetivosEspecificos_listarPorProyecto": "SELECT oe.* FROM objetivos_especificos oe JOIN objetivos_generales og ON oe.objetivo_general_id = og.id WHERE og.proyecto_id = $1 ORDER BY oe.fecha_creacion",
-  "actividades_listarPorProyecto": "SELECT a.*, ea.nombre_estado AS estado FROM actividades a JOIN estados_actividad ea ON a.estado_actividad_id = ea.id WHERE a.proyecto_id = $1 ORDER BY a.fecha_creacion",
+  "actividades_listarPorProyecto": "SELECT * FROM actividades WHERE proyecto_id = $1 ORDER BY fecha_creacion",
   "prioridades_listar": "SELECT id, nombre_prioridad FROM prioridades ORDER BY id",
   "estados_actividad_listar": "SELECT id, nombre_estado FROM estados_actividad ORDER BY id",
   "actividades_verificarAsignacionValida": "SELECT p.id FROM proyectos p JOIN proyecto_usuarios pu ON p.id = pu.proyecto_id JOIN actividades a ON p.id = a.proyecto_id WHERE a.id = $1 AND pu.usuario_id = $2 AND p.empresa_id = $3",
   "asignaciones_insertar": "INSERT INTO asignaciones_actividades (actividad_id, usuario_id) VALUES ($1, $2) RETURNING *",
   "rolesProyecto_listar": "SELECT id, nombre_rol_proyecto FROM roles_proyecto ORDER BY nombre_rol_proyecto;",
-  "asignaciones_listarPorProyecto": "SELECT aa.actividad_id, u.id as usuario_id, p.nombre, p.apellido FROM asignaciones_actividades aa JOIN usuarios u ON aa.usuario_id = u.id JOIN perfiles p ON u.id = p.usuario_id JOIN actividades a ON aa.actividad_id = a.id WHERE a.proyecto_id = $1"
+  "asignaciones_listarPorProyecto": "SELECT aa.actividad_id, aa.usuario_id, p.nombre, p.apellido FROM asignaciones_actividades aa JOIN perfiles p ON aa.usuario_id = p.usuario_id JOIN actividades a ON aa.actividad_id = a.id WHERE a.proyecto_id = $1"
 }
