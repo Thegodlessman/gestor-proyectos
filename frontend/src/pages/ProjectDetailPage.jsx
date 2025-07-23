@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { rpcCall } from '../services/api';
@@ -86,21 +89,22 @@ const ProjectDetailPage = () => {
 
     const fetchDropdownData = useCallback(async () => {
         if (!id) return;
-        try {
-            const [membersData, prioritiesData, rolesData] = await Promise.all([
-                rpcCall('Project', 'listarMiembros', { proyecto_id: id }),
-                rpcCall('Project', 'listarPrioridades'),
-                rpcCall('Project', 'listarRolesProyecto')
-            ]);
-            
-            setMembers(membersData);
-            setPriorities(prioritiesData.map(p => ({ label: p.nombre, value: p.id })));
-            const projectRoles = rolesData.map(r => ({ label: r.nombre_rol_proyecto, value: r.id }));
-            setRoles(projectRoles);
-            if (projectRoles.length > 0) {
-                const defaultRole = projectRoles.find(r => r.label === 'Colaborador') || projectRoles[0];
-                setSelectedRole(defaultRole.value); 
-            }
+    try {
+        const [membersData, prioritiesData, rolesData] = await Promise.all([
+            rpcCall('Project', 'listarMiembros', { proyecto_id: id }),
+            rpcCall('Project', 'listarPrioridades'),
+            rpcCall('Project', 'listarRolesProyecto')
+        ]);
+        
+        setMembers(membersData);
+        // CORRECCIÓN: Usamos 'nombre_prioridad' para la etiqueta
+        setPriorities(prioritiesData.map(p => ({ label: p.nombre_prioridad, value: p.id })));
+        const projectRoles = rolesData.map(r => ({ label: r.nombre_rol_proyecto, value: r.id }));
+        setRoles(projectRoles);
+        if (projectRoles.length > 0) {
+            const defaultRole = projectRoles.find(r => r.label === 'Colaborador') || projectRoles[0];
+            setSelectedRole(defaultRole.value); 
+        }
 
         } catch (error) {
             console.error("Error fetching dropdown data:", error);
@@ -387,7 +391,7 @@ const ProjectDetailPage = () => {
                                         id="itemResponsible" 
                                         value={modalConfig.data.id_usuario_responsable} 
                                         onChange={(e) => setModalConfig(prev => ({ ...prev, data: { ...prev.data, id_usuario_responsable: e.value } }))} 
-                                        options={members.map(m => ({ label: m.nombre_usuario, value: m.usuario_id }))}
+                                        options={members.map(m => ({ label: m.nombre + " " + m.apellido, value: m.usuario_id }))}
                                         placeholder="Selecciona un responsable" 
                                         className="w-full" 
                                     />
@@ -438,7 +442,7 @@ const ProjectDetailPage = () => {
                     {members.map(member => (
                         <div key={member.usuario_id} className="flex justify-content-between align-items-center p-2 border-round-md bg-slate-50">
                             <div>
-                                <p className="font-bold m-0">{member.nombre_usuario}</p>
+                                <p className="font-bold m-0">{member.nombre}</p>
                                 <p className="text-sm text-gray-500 m-0">{member.nombre_rol_proyecto}</p>
                             </div>
                             <Button icon="pi pi-trash" className="p-button-rounded p-button-danger p-button-text" onClick={() => handleRemoveMember(member)} />
@@ -463,7 +467,7 @@ const ProjectDetailPage = () => {
                         
                         <div className="mb-4">
                             <p className="font-bold text-lg">Descripción</p>
-                            <p>{selectedActivity.nombre}</p>
+                            <p>{selectedActivity.descripcion}</p>
                         </div>
 
                         <div className="mb-4">
