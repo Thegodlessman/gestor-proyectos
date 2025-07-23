@@ -9,6 +9,7 @@ import Security from './src/security/Security.js';
 import authRoutes from './src/routes/auth.routes.js';
 import createToProcessRouter from './src/routes/toProcess.routes.js';
 import securityRoutes from './src/routes/security.routes.js'
+import profileRoutes from './src/routes/profile.routes.js';
 
 const app = express();
 
@@ -37,7 +38,8 @@ const startServer = async () => {
         }));
 
         app.use('/api/auth', authRoutes);
-        app.use('/security', securityRoutes)
+        app.use('/api/profile', profileRoutes);
+        app.use('/security', securityRoutes);
         
         app.use('/toProcess', createToProcessRouter(security));
 
