@@ -568,7 +568,7 @@ const ProjectDetailPage = () => {
                 <AvatarGroup>
                     {members.map(member => (
                         <Avatar 
-                            key={member.id} 
+                            key={member.usuario_id} 
                             label={(member.nombre || ' ').charAt(0)} 
                             size="large" 
                             shape="circle" 

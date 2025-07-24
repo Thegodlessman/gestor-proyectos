@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from 'primereact/avatar';
@@ -7,12 +7,61 @@ import { Menu } from 'primereact/menu';
 import { Button } from 'primereact/button';
 import { classNames } from 'primereact/utils';
 import logoUrl from './proyectify.svg';
+import NotificationBell from '../components/NotificationBell';
+
+const API_BASE_URL = 'http://localhost:3000';
+
+// Componente para mostrar la imagen de perfil o avatar por defecto
+const ProfileImageAvatar = ({ user, imageUrl }) => {
+    const [showFallback, setShowFallback] = useState(false);
+
+    // Resetear el fallback cuando cambie la URL de la imagen
+    useEffect(() => {
+        setShowFallback(false);
+    }, [imageUrl]);
+
+    const handleImageError = () => {
+        setShowFallback(true);
+    };
+
+    if (!imageUrl || showFallback) {
+        return (
+            <Avatar 
+                label={user?.nombre ? user.nombre.charAt(0).toUpperCase() : 'U'} 
+                size="large" 
+                shape="circle" 
+                className="bg-sky-500 text-white"
+            />
+        );
+    }
+
+    return (
+        <img 
+            src={imageUrl} 
+            alt="Foto de perfil" 
+            onError={handleImageError}
+            className="w-3rem h-3rem border-circle shadow-2"
+            style={{ objectFit: 'cover' }}
+        />
+    );
+};
 
 const AppLayout = () => {
     const { user, logout } = useAuth(); 
     const navigate = useNavigate();
     const location = useLocation();
     const menu = useRef(null);
+    const [imageVersion, setImageVersion] = useState(Date.now());
+
+    // Actualizar la versión de la imagen cuando cambie el usuario
+    useEffect(() => {
+        if (user?.profileImageVersion) {
+            setImageVersion(user.profileImageVersion);
+        }
+    }, [user?.profileImageVersion]);
+
+    // URL de la imagen del usuario
+    const imageUrl = user?.id ? `${API_BASE_URL}/api/profile/image/${user.id}?v=${imageVersion}` : null;
 
     const handleLogout = async () => {
         try {
@@ -70,16 +119,12 @@ const AppLayout = () => {
             <div className="flex-1 flex flex-column">
                 <header className="bg-white  h-16 flex justify-content-end align-items-center px-5 sticky top-0 z-10">
                     <div className="flex align-items-center gap-4">
+                        <NotificationBell />
                         <span className="font-semibold text-slate-600 hidden sm:block">
                             {user?.nombre || 'Usuario'} {user?.apellido || ''}
                         </span>
                         <div className='cursor-pointer' onClick={(e) => menu.current.toggle(e)} aria-controls="user-menu" aria-haspopup>
-                            <Avatar 
-                                label={user?.nombre ? user.nombre.charAt(0).toUpperCase() : 'U'} 
-                                size="large" 
-                                shape="circle" 
-                                className="bg-sky-500 text-white"
-                            />
+                            <ProfileImageAvatar user={user} imageUrl={imageUrl} />
                         </div>
                         <Menu model={userMenuItems} popup ref={menu} id="user-menu" />
                     </div>
