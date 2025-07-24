@@ -22,6 +22,10 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(false);
     const [userActivities, setUserActivities] = useState([]);
     const [activitiesLoading, setActivitiesLoading] = useState(true);
+    const [chartData, setChartData] = useState({
+        labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'],
+        datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#e5e7eb', '#3b82f6', '#22c55e', '#ef4444'] }]
+    });
 
     const handleInviteSubmit = async (e) => {
         e.preventDefault();
@@ -88,14 +92,38 @@ const DashboardPage = () => {
                 }
             }
 
-            // 3. Ordenar por fecha de fin (más urgentes primero)
+            // 3. Calcular estadísticas para el gráfico (usando todas las actividades)
+            const statusCounts = {
+                'Pendiente': 0,
+                'En Progreso': 0,
+                'Completada': 0,
+                'Cancelada': 0
+            };
+
+            allUserActivities.forEach(activity => {
+                const estado = activity.estado_actividad;
+                if (statusCounts.hasOwnProperty(estado)) {
+                    statusCounts[estado]++;
+                }
+            });
+
+            // Actualizar datos del gráfico
+            setChartData({
+                labels: ['Pendiente', 'En Progreso', 'Completada', 'Cancelada'],
+                datasets: [{
+                    data: [statusCounts['Pendiente'], statusCounts['En Progreso'], statusCounts['Completada'], statusCounts['Cancelada']],
+                    backgroundColor: ['#e5e7eb', '#3b82f6', '#22c55e', '#ef4444']
+                }]
+            });
+
+            // 4. Ordenar por fecha de fin (más urgentes primero)
             allUserActivities.sort((a, b) => {
                 if (!a.fecha_fin_estimada) return 1;
                 if (!b.fecha_fin_estimada) return -1;
                 return new Date(a.fecha_fin_estimada) - new Date(b.fecha_fin_estimada);
             });
 
-            // 4. Tomar solo las primeras 5 actividades más urgentes
+            // 5. Tomar solo las primeras 5 actividades más urgentes para la lista
             setUserActivities(allUserActivities.slice(0, 5));
             
         } catch (error) {
@@ -140,14 +168,11 @@ const DashboardPage = () => {
             case 'Completada': return 'success';
             case 'En Progreso': return 'info';
             case 'Pendiente': return 'warning';
+            case 'Cancelada': return 'danger';
             default: return 'secondary';
         }
     };
 
-    const projectStatusData = {
-        labels: ['En Progreso', 'Retrasado', 'Completado', 'Pendiente'],
-        datasets: [{ data: [5, 2, 8, 3], backgroundColor: ['#3b82f6', '#f59e0b', '#22c55e', '#e5e7eb'] }]
-    };
     const chartOptions = { plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, color: '#4b5563' } } }, cutout: '60%' };
 
     return (
@@ -207,8 +232,15 @@ const DashboardPage = () => {
                                 </Card>
                             </div>
                             <div className="col-12 md:col-6">
-                                <Card title="Proyectos por Estado" className="shadow-1 h-full flex flex-column align-items-center justify-content-center">
-                                    <Chart type="doughnut" data={projectStatusData} options={chartOptions} style={{ position: 'relative', width: '75%' }} />
+                                <Card title="Estado de las actividades" className="shadow-1 h-full flex flex-column align-items-center justify-content-center">
+                                    {activitiesLoading ? (
+                                        <div className="flex align-items-center justify-content-center p-4">
+                                            <i className="pi pi-spinner pi-spin text-2xl text-blue-500"></i>
+                                            <span className="ml-2">Cargando estadísticas...</span>
+                                        </div>
+                                    ) : (
+                                        <Chart type="doughnut" data={chartData} options={chartOptions} style={{ position: 'relative', width: '75%' }} />
+                                    )}
                                 </Card>
                             </div>
                         </div>

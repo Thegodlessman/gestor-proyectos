@@ -17,8 +17,7 @@ const ProfilePage = () => {
     // State for user profile data
     const [profileData, setProfileData] = useState({
         nombre: '',
-        apellido: '',
-        correo: ''
+        apellido: ''
     });
 
     // Loading state
@@ -32,8 +31,7 @@ const ProfilePage = () => {
         if (user) {
             setProfileData({
                 nombre: user.nombre || '',
-                apellido: user.apellido || '',
-                correo: user.correo || ''
+                apellido: user.apellido || ''
             });
         }
     }, [user]);
@@ -126,11 +124,6 @@ const ProfilePage = () => {
                 <div className="flex flex-column gap-2">
                     <label htmlFor="apellido" className="font-semibold">Apellido</label>
                     <InputText id="apellido" name="apellido" value={profileData.apellido} onChange={handleProfileInputChange} />
-                </div>
-
-                <div className="flex flex-column gap-2">
-                    <label htmlFor="correo" className="font-semibold">Correo</label>
-                    <InputText id="correo" value={profileData.correo} disabled />
                 </div>
             </div>
             <div className="flex justify-content-end mt-6">
