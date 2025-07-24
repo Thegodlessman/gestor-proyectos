@@ -8,6 +8,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerificarEmail from "./pages/VerificarEmail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
+import ProfilePage from "./pages/ProfilePage";
 import ProjectsPage from "./pages/ProjectsPage"; 
 import AdminPermissionsPage from './pages/AdminPermissionsPage';
 
@@ -23,6 +24,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<Security />} />
           <Route path="project/:id" element={<ProjectDetailPage />} />
           <Route path="/admin/permisos" element={<AdminPermissionsPage/>}/>

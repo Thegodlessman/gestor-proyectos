@@ -41,6 +41,7 @@ const ProjectDetailPage = () => {
     const [members, setMembers] = useState([]);
     const [priorities, setPriorities] = useState([]);
     const [roles, setRoles] = useState([]);
+    const [estadosActividad, setEstadosActividad] = useState([]);
 
     // Modal states
     const [isItemModalVisible, setIsItemModalVisible] = useState(false);
@@ -53,19 +54,82 @@ const ProjectDetailPage = () => {
     const [isDetailSidebarVisible, setIsDetailSidebarVisible] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
 
+    // Función para calcular el progreso de una actividad basado en su estado
+    const calculateActivityProgress = (estado) => {
+        switch (estado) {
+            case 'Completada':
+                return 100;
+            case 'En Progreso':
+                return 50;
+            case 'Pendiente':
+            default:
+                return 0;
+        }
+    };
+
+    // Función para calcular el progreso de un objetivo específico basado en sus actividades
+    const calculateObjetivoEspecificoProgress = (actividades) => {
+        if (!actividades || actividades.length === 0) return 0;
+        
+        const totalProgress = actividades.reduce((sum, actividad) => {
+            return sum + calculateActivityProgress(actividad.estado_actividad);
+        }, 0);
+        
+        return Math.round(totalProgress / actividades.length);
+    };
+
+    // Función para calcular el progreso de un objetivo general basado en sus objetivos específicos
+    const calculateObjetivoGeneralProgress = (objetivosEspecificos) => {
+        if (!objetivosEspecificos || objetivosEspecificos.length === 0) return 0;
+        
+        const totalProgress = objetivosEspecificos.reduce((sum, oe) => {
+            return sum + calculateObjetivoEspecificoProgress(oe.actividades || []);
+        }, 0);
+        
+        return Math.round(totalProgress / objetivosEspecificos.length);
+    };
+
     const transformDataToNodes = useCallback((project) => {
-        return (project?.objetivos_generales ?? []).map((og) => ({
-            key: `og-${og.id}`,
-            data: { ...og, type: 'Objetivo General', nombre: og.descripcion, progreso: og.progreso_promedio || 0 },
-            children: (og?.objetivos_especificos ?? []).map((oe) => ({
-                key: `oe-${oe.id}`,
-                data: { ...oe, type: 'Objetivo Específico', nombre: oe.descripcion, progreso: oe.progreso_promedio || 0 },
-                children: (oe?.actividades ?? []).map((act) => ({
+        return (project?.objetivos_generales ?? []).map((og) => {
+            const objetivosEspecificos = (og?.objetivos_especificos ?? []).map((oe) => {
+                const actividades = (oe?.actividades ?? []).map((act) => ({
                     key: `act-${act.id}`,
-                    data: { ...act, type: 'Actividad', nombre: act.descripcion, estado: act.estado_actividad },
-                })),
-            })),
-        }));
+                    data: { 
+                        ...act, 
+                        type: 'Actividad', 
+                        nombre: act.descripcion, 
+                        estado: act.estado_actividad,
+                        progreso: calculateActivityProgress(act.estado_actividad)
+                    },
+                }));
+
+                const progresoOE = calculateObjetivoEspecificoProgress(oe.actividades || []);
+                
+                return {
+                    key: `oe-${oe.id}`,
+                    data: { 
+                        ...oe, 
+                        type: 'Objetivo Específico', 
+                        nombre: oe.descripcion, 
+                        progreso: progresoOE
+                    },
+                    children: actividades,
+                };
+            });
+
+            const progresoOG = calculateObjetivoGeneralProgress(og.objetivos_especificos || []);
+
+            return {
+                key: `og-${og.id}`,
+                data: { 
+                    ...og, 
+                    type: 'Objetivo General', 
+                    nombre: og.descripcion, 
+                    progreso: progresoOG
+                },
+                children: objetivosEspecificos,
+            };
+        });
     }, []);
 
     const fetchProjectDetails = useCallback(async () => {
@@ -91,10 +155,11 @@ const ProjectDetailPage = () => {
     const fetchDropdownData = useCallback(async () => {
         if (!id) return;
         try {
-            const [membersData, prioritiesData, rolesData] = await Promise.all([
+            const [membersData, prioritiesData, rolesData, estadosData] = await Promise.all([
                 rpcCall('Project', 'listarMiembros', { proyecto_id: id }),
                 rpcCall('Project', 'listarPrioridades'),
-                rpcCall('Project', 'listarRolesProyecto')
+                rpcCall('Project', 'listarRolesProyecto'),
+                rpcCall('Project', 'listarEstadosActividad')
             ]);
 
             setMembers(membersData);
@@ -102,6 +167,8 @@ const ProjectDetailPage = () => {
             setPriorities(prioritiesData.map(p => ({ label: p.nombre_prioridad, value: p.id })));
             const projectRoles = rolesData.map(r => ({ label: r.nombre_rol_proyecto, value: r.id }));
             setRoles(projectRoles);
+            setEstadosActividad(estadosData.map(e => ({ label: e.nombre_estado, value: e.id })));
+            
             if (projectRoles.length > 0) {
                 const defaultRole = projectRoles.find(r => r.label === 'Colaborador') || projectRoles[0];
                 setSelectedRole(defaultRole.value);
@@ -219,6 +286,57 @@ const ProjectDetailPage = () => {
         }
     };
 
+
+    const openDetailSidebar = (activityData) => {
+        setSelectedActivity(activityData);
+        setIsDetailSidebarVisible(true);
+    };
+
+    const handleUpdateActivityStatus = async (actividadId, nuevoEstadoId) => {
+        try {
+            await rpcCall('Project', 'actualizarActividad', {
+                actividad_id: actividadId,
+                estado_id: nuevoEstadoId
+            });
+            
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'success', 
+                    summary: 'Estado Actualizado', 
+                    detail: 'El estado de la actividad se ha actualizado correctamente.' 
+                });
+            }
+            
+            // Refrescar los datos del proyecto para mostrar el cambio
+            await fetchProjectDetails();
+            
+            // Actualizar la actividad seleccionada en el sidebar
+            if (selectedActivity && selectedActivity.id === actividadId) {
+                const estadoActualizado = estadosActividad.find(e => e.value === nuevoEstadoId);
+                setSelectedActivity(prev => ({
+                    ...prev,
+                    estado_actividad_id: nuevoEstadoId,
+                    estado_actividad: estadoActualizado?.label || prev.estado_actividad
+                }));
+            }
+            
+        } catch (error) {
+            console.error("Error updating activity status:", error);
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'error', 
+                    summary: 'Error', 
+                    detail: error.message || 'No se pudo actualizar el estado de la actividad.' 
+                });
+            }
+        }
+    };
+
+    const getSeverity = (status) => {
+        const statusMap = { 'Completada': 'success', 'En Progreso': 'info', 'Retrasado': 'danger', 'Pendiente': 'warning' };
+        return statusMap[status] || 'secondary';
+    };
+
     const handleRemoveMember = (member) => {
         confirmDialog({
             message: `¿Estás seguro de que quieres eliminar a ${member.nombre_usuario} del proyecto?`,
@@ -237,16 +355,6 @@ const ProjectDetailPage = () => {
                 }
             }
         });
-    };
-
-    const openDetailSidebar = (activityData) => {
-        setSelectedActivity(activityData);
-        setIsDetailSidebarVisible(true);
-    };
-
-    const getSeverity = (status) => {
-        const statusMap = { 'Completada': 'success', 'En Progreso': 'info', 'Retrasado': 'danger', 'Pendiente': 'warning' };
-        return statusMap[status] || 'secondary';
     };
 
     const formatDate = (dateString) => {
@@ -342,10 +450,18 @@ const ProjectDetailPage = () => {
     };
 
     const priorityBodyTemplate = (node) => {
-        if (!node.data.prioridad) return null;
-        const priorityMap = { 'Alta': { severity: 'danger', icon: 'pi-arrow-up' }, 'Media': { severity: 'warning', icon: 'pi-minus' }, 'Baja': { severity: 'success', icon: 'pi-arrow-down' }, 'Urgente': { severity: 'danger', icon: 'pi-exclamation-triangle' } };
-        const p = priorityMap[node.data.nombre_prioridad] || { severity: 'info', icon: 'pi-question-circle' };
-        return <Tag value={node.data.nombre_prioridad} severity={p.severity} icon={`pi ${p.icon}`} />;
+        // Verificar si hay prioridad disponible (puede estar en diferentes campos)
+        const prioridad = node.data.nombre_prioridad || node.data.prioridad;
+        if (!prioridad) return null;
+        
+        const priorityMap = { 
+            'Alta': { severity: 'danger', icon: 'pi-arrow-up' }, 
+            'Media': { severity: 'warning', icon: 'pi-minus' }, 
+            'Baja': { severity: 'success', icon: 'pi-arrow-down' }, 
+            'Urgente': { severity: 'danger', icon: 'pi-exclamation-triangle' } 
+        };
+        const p = priorityMap[prioridad] || { severity: 'info', icon: 'pi-question-circle' };
+        return <Tag value={prioridad} severity={p.severity} icon={`pi ${p.icon}`} />;
     };
 
     const statusBodyTemplate = (node) => <Tag value={node.data.estado || 'N/A'} severity={getSeverity(node.data.estado)} />;
@@ -411,22 +527,13 @@ const ProjectDetailPage = () => {
                     />
                 )}
                 {canEdit && (
-                    <>
-                        <Button
-                            icon="pi pi-pencil"
-                            className="p-button-rounded p-button-warning p-button-icon-only"
-                            style={{ width: '2.5rem', height: '2.5rem' }}
-                            tooltip="Editar"
-                            onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
-                        />
-                        <Button
-                            icon="pi pi-trash"
-                            className="p-button-rounded p-button-danger p-button-icon-only"
-                            style={{ width: '2.5rem', height: '2.5rem' }}
-                            tooltip="Eliminar"
-                            onClick={() => handleDelete(node)}
-                        />
-                    </>
+                    <Button
+                        icon="pi pi-pencil"
+                        className="p-button-rounded p-button-warning p-button-icon-only"
+                        style={{ width: '2.5rem', height: '2.5rem' }}
+                        tooltip="Editar"
+                        onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
+                    />
                 )}
             </div>
         );
@@ -624,7 +731,7 @@ const ProjectDetailPage = () => {
             <Dialog header={modalConfig.title} visible={isItemModalVisible} style={{ width: 'min(90vw, 500px)' }} onHide={() => setIsItemModalVisible(false)} footer={modalFooter} modal>
                 <div className="flex flex-column gap-4 mt-3">
                     <div className="flex flex-column gap-2">
-                        <label htmlFor="itemDescription" className='font-semibold'>Descripción</label>
+                        <label htmlFor="itemDescription" className='font-semibold'>Titulo</label>
                         <InputTextarea
                             id="itemDescription"
                             value={modalConfig.data.descripcion || ''}
@@ -712,29 +819,100 @@ const ProjectDetailPage = () => {
                 </div>
             </Dialog>
 
-            <Sidebar visible={isDetailSidebarVisible} onHide={() => setIsDetailSidebarVisible(false)} position="left">
+            <Sidebar visible={isDetailSidebarVisible} onHide={() => setIsDetailSidebarVisible(false)} position="left" style={{ width: '400px' }}>
                 {selectedActivity && (
                     <div className="p-4">
-                        <h2 className="text-2xl font-bold mb-4">Detalles de la Actividad</h2>
-
-                        <div className="mb-4">
-                            <p className="font-bold text-lg">Descripción</p>
-                            <p>{selectedActivity.descripcion}</p>
+                        <div className="flex align-items-center gap-3 mb-4">
+                            <i className="pi pi-check-square text-orange-600 text-2xl"></i>
+                            <h2 className="text-2xl font-bold m-0">Detalles de la Actividad</h2>
                         </div>
 
                         <div className="mb-4">
-                            <p className="font-bold text-lg">Responsable</p>
-                            <p>{selectedActivity.nombre_responsable || 'No asignado'}</p>
-                        </div>
-
-                        <div className="grid">
-                            <div className="col-6">
-                                <p className="font-bold text-lg">Fecha de Inicio</p>
-                                <p>{formatDate(selectedActivity.fecha_inicio_estimada)}</p>
+                            <label className="font-bold text-lg block mb-2">Descripción</label>
+                            <div className="p-3 bg-gray-50 border-round-md">
+                                <p className="m-0">{selectedActivity.descripcion}</p>
                             </div>
-                            <div className="col-6">
-                                <p className="font-bold text-lg">Fecha Límite</p>
-                                <p>{formatDate(selectedActivity.fecha_fin_estimada)}</p>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="font-bold text-lg block mb-2">Responsable</label>
+                            <div className="flex align-items-center gap-2">
+                                <Avatar
+                                    label={selectedActivity.nombre_responsable ? selectedActivity.nombre_responsable.charAt(0) : '?'}
+                                    size="normal"
+                                    shape="circle"
+                                    className={selectedActivity.nombre_responsable ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"}
+                                />
+                                <span className="font-medium">{selectedActivity.nombre_responsable || 'No asignado'}</span>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="font-bold text-lg block mb-2">Estado Actual</label>
+                            <div className="mb-3">
+                                <Tag 
+                                    value={selectedActivity.estado_actividad || 'Pendiente'} 
+                                    severity={getSeverity(selectedActivity.estado_actividad)} 
+                                    className="text-sm"
+                                />
+                            </div>
+                            
+                            {/* Solo mostrar el dropdown si el usuario es el responsable de la actividad */}
+                            {user && selectedActivity.usuarios_asignados && 
+                             selectedActivity.usuarios_asignados.some(u => u.usuario_id === user.id) && (
+                                <div>
+                                    <label className="font-semibold block mb-2">Cambiar Estado</label>
+                                    <Dropdown
+                                        value={selectedActivity.estado_actividad_id}
+                                        onChange={(e) => handleUpdateActivityStatus(selectedActivity.id, e.value)}
+                                        options={estadosActividad}
+                                        placeholder="Seleccionar estado"
+                                        className="w-full"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="font-bold text-lg block mb-2">Prioridad</label>
+                            <div>
+                                {priorityBodyTemplate({ data: selectedActivity }) || (
+                                    <span className="text-gray-500 italic">Sin prioridad asignada</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid mb-4">
+                            <div className="col-12">
+                                <label className="font-bold text-lg block mb-2">Fecha de Inicio</label>
+                                <div className="p-2 bg-gray-50 border-round-md">
+                                    {formatDate(selectedActivity.fecha_inicio_estimada)}
+                                </div>
+                            </div>
+                            <div className="col-12 mt-3">
+                                <label className="font-bold text-lg block mb-2">Fecha Límite</label>
+                                <div className="p-2 bg-gray-50 border-round-md">
+                                    {formatDate(selectedActivity.fecha_fin_estimada)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="font-bold text-lg block mb-2">Progreso</label>
+                            <div className="flex align-items-center gap-3">
+                                <ProgressBar
+                                    value={selectedActivity.progreso || 0}
+                                    showValue={false}
+                                    style={{
+                                        height: '12px',
+                                        flex: 1,
+                                        backgroundColor: '#f1f5f9',
+                                        borderRadius: '6px'
+                                    }}
+                                />
+                                <span className="text-sm font-medium text-slate-600 min-w-max">
+                                    {(selectedActivity.progreso || 0).toFixed(0)}%
+                                </span>
                             </div>
                         </div>
                     </div>
