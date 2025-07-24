@@ -101,6 +101,11 @@ class Project {
 
             const { rows } = await client.query(this.dataAccess.queries['proyecto_usuarios_insertar'], [proyecto_id, usuario_a_agregar_id, rol_proyecto_id]);
 
+            const mensaje = `Has sido añadido al proyecto '${proyectoResult.rows[0].nombre_proyecto}'.`;
+            await client.query(this.dataAccess.queries['notificaciones_crear'], 
+                [usuario_a_agregar_id, 'NUEVA_ASIGNACION_PROYECTO', mensaje, proyecto_id, 'proyecto']
+            );
+            
             await client.query('COMMIT');
             return rows[0];
         } catch (error) {
@@ -157,7 +162,7 @@ class Project {
         if (!proyecto_id || !descripcion || !fecha_fin_estimada || !prioridad_id) {
             throw new Error('Proyecto, descripción, fecha de fin y prioridad son requeridos.');
         }
-        
+
         const fechaInicio = fecha_inicio_estimada ? fecha_inicio_estimada.split('T')[0] : new Date().toISOString().split('T')[0];
         const fechaFin = fecha_fin_estimada.split('T')[0];
     
@@ -266,6 +271,13 @@ class Project {
         }
 
         const { rows } = await this.dataAccess.exe('asignaciones_insertar', [actividad_id, usuario_id]);
+
+        const actividadResult = await this.dataAccess.exe('actividades_obtenerPorId', [actividad_id]);
+        const mensaje = `Se te ha asignado la actividad: '${actividadResult.rows[0].descripcion}'.`;
+        await this.dataAccess.exe('notificaciones_crear',
+            [usuario_id, 'NUEVA_ASIGNACION_ACTIVIDAD', mensaje, actividad_id, 'actividad']
+        );
+
         return rows[0];
     }
     
@@ -288,6 +300,21 @@ class Project {
         if (rowCount === 0) {
             throw new Error('No se pudo actualizar la actividad. Asegúrate de ser miembro del proyecto.');
         }
+
+        if (estado_id) {
+            const { rows: asignados } = await this.dataAccess.exe('asignaciones_listarPorActividad', [actividad_id]);
+            if (asignados.length > 0) {
+                const { rows: estado } = await this.dataAccess.exe('estados_actividad_obtenerPorId', [estado_id]);
+                const mensaje = `El estado de la actividad '${rows[0].descripcion}' ha cambiado a: ${estado[0].nombre_estado}.`;
+                
+                for (const asignado of asignados) {
+                    await this.dataAccess.exe('notificaciones_crear',
+                        [asignado.usuario_id, 'CAMBIO_ESTADO_ACTIVIDAD', mensaje, actividad_id, 'actividad']
+                    );
+                }
+            }
+        }
+        
         return rows[0];
     }
 }
