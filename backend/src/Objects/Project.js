@@ -153,24 +153,21 @@ class Project {
 
     async crearActividad(params, usuarioSesion) {
         let { proyecto_id, objetivo_especifico_id, descripcion, fecha_inicio_estimada, fecha_fin_estimada, prioridad_id } = params;
-
+    
         if (!proyecto_id || !descripcion || !fecha_fin_estimada || !prioridad_id) {
             throw new Error('Proyecto, descripción, fecha de fin y prioridad son requeridos.');
         }
-
-        // Si no se provee fecha de inicio, se usa la fecha actual.
-        if (!fecha_inicio_estimada) {
-            fecha_inicio_estimada = new Date().toISOString().split('T')[0];
-        }
-
+        
+        const fechaInicio = fecha_inicio_estimada ? fecha_inicio_estimada.split('T')[0] : new Date().toISOString().split('T')[0];
+        const fechaFin = fecha_fin_estimada.split('T')[0];
+    
         const proyectoCheck = await this.dataAccess.exe('proyectos_buscarSimple', [proyecto_id, usuarioSesion.empresa_id]);
-        if (proyectoCheck.rowCount === 0) throw new Error('Proyecto no encontrado o no tienes permiso.');
-
+        if (proyectoCheck.rowCount === 0) throw new Error('Proyecto no encontrado.');
+        
         const estadoResult = await this.dataAccess.exe('estados_actividad_buscarPendiente');
-        if (estadoResult.rowCount === 0) throw new Error("Estado 'Pendiente' no encontrado.");
         const estado_inicial_id = estadoResult.rows[0].id;
-
-        const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_inicio_estimada, fecha_fin_estimada, prioridad_id, estado_inicial_id];
+        
+        const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fechaInicio, fechaFin, prioridad_id, estado_inicial_id];
         const { rows } = await this.dataAccess.exe('actividades_crear', values);
         return rows[0];
     }

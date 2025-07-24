@@ -36,14 +36,69 @@ const ProjectsPage = () => {
         { label: 'Urgente', value: 'e8d5d10c-ada3-4856-bd7b-f170f40fb2d4' },
     ];
 
+    // Función para calcular el progreso de una actividad basado en su estado
+    const calculateActivityProgress = (estado) => {
+        switch (estado) {
+            case 'Completada':
+                return 100;
+            case 'En Progreso':
+                return 50;
+            case 'Pendiente':
+            default:
+                return 0;
+        }
+    };
+
+    // Función para calcular el progreso de un proyecto completo
+    const calculateProjectProgress = async (projectId) => {
+        try {
+            const projectData = await rpcCall('Project', 'obtenerJerarquia', { proyecto_id: projectId });
+            
+            if (!projectData || !projectData.objetivos_generales || projectData.objetivos_generales.length === 0) {
+                return 0;
+            }
+
+            let totalActivities = 0;
+            let totalProgress = 0;
+
+            // Recorrer todos los objetivos generales
+            projectData.objetivos_generales.forEach(og => {
+                if (og.objetivos_especificos) {
+                    og.objetivos_especificos.forEach(oe => {
+                        if (oe.actividades) {
+                            oe.actividades.forEach(actividad => {
+                                totalActivities++;
+                                totalProgress += calculateActivityProgress(actividad.estado_actividad);
+                            });
+                        }
+                    });
+                }
+            });
+
+            return totalActivities > 0 ? Math.round(totalProgress / totalActivities) : 0;
+        } catch (error) {
+            console.error(`Error calculating progress for project ${projectId}:`, error);
+            return 0;
+        }
+    };
+
     const fetchProjects = useCallback(async () => {
         setLoading(true);
         try {
             const result = await rpcCall('Project', 'listar');
-            const projectsWithDefaults = Array.isArray(result) 
-                ? result.map(p => ({ ...p, progreso: p.progreso || 0 }))
-                : [];
-            setProjects(projectsWithDefaults);
+            
+            if (Array.isArray(result)) {
+                // Calcular el progreso para cada proyecto
+                const projectsWithProgress = await Promise.all(
+                    result.map(async (project) => {
+                        const progreso = await calculateProjectProgress(project.id);
+                        return { ...project, progreso };
+                    })
+                );
+                setProjects(projectsWithProgress);
+            } else {
+                setProjects([]);
+            }
         } catch (error) {
             console.error("Error al obtener proyectos:", error);
             toast.current.show({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proyectos.' });
@@ -100,7 +155,42 @@ const ProjectsPage = () => {
         }
     };
     const statusBodyTemplate = (rowData) => <Tag value={rowData.estado || 'N/A'} severity={getSeverity(rowData.estado)} />;
-    const progressBodyTemplate = (rowData) => <ProgressBar value={rowData.progreso} showValue={false} style={{ height: '8px' }}></ProgressBar>;
+    
+    const progressBodyTemplate = (rowData) => {
+        const progress = rowData.progreso || 0;
+        const getProgressColor = (value) => {
+            if (value >= 80) return '#22c55e'; // Verde
+            if (value >= 60) return '#3b82f6'; // Azul
+            if (value >= 40) return '#f59e0b'; // Amarillo
+            return '#ef4444'; // Rojo
+        };
+
+        return (
+            <div className="flex align-items-center gap-3">
+                <ProgressBar
+                    value={progress}
+                    showValue={false}
+                    style={{
+                        height: '12px',
+                        flex: 1,
+                        backgroundColor: '#f1f5f9',
+                        borderRadius: '6px'
+                    }}
+                    pt={{
+                        value: {
+                            style: {
+                                backgroundColor: getProgressColor(progress),
+                                borderRadius: '6px'
+                            }
+                        }
+                    }}
+                />
+                <span className="text-sm font-medium text-slate-600 min-w-max">
+                    {progress.toFixed(0)}%
+                </span>
+            </div>
+        );
+    };
     
     const header = (
         <div className="flex flex-column sm:flex-row justify-content-between align-items-center gap-3">
