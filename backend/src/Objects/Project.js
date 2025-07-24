@@ -152,9 +152,15 @@ class Project {
     }
 
     async crearActividad(params, usuarioSesion) {
-        const { proyecto_id, objetivo_especifico_id, descripcion, fecha_fin_estimada, prioridad_id } = params;
+        let { proyecto_id, objetivo_especifico_id, descripcion, fecha_inicio_estimada, fecha_fin_estimada, prioridad_id } = params;
+
         if (!proyecto_id || !descripcion || !fecha_fin_estimada || !prioridad_id) {
             throw new Error('Proyecto, descripción, fecha de fin y prioridad son requeridos.');
+        }
+
+        // Si no se provee fecha de inicio, se usa la fecha actual.
+        if (!fecha_inicio_estimada) {
+            fecha_inicio_estimada = new Date().toISOString().split('T')[0];
         }
 
         const proyectoCheck = await this.dataAccess.exe('proyectos_buscarSimple', [proyecto_id, usuarioSesion.empresa_id]);
@@ -164,7 +170,7 @@ class Project {
         if (estadoResult.rowCount === 0) throw new Error("Estado 'Pendiente' no encontrado.");
         const estado_inicial_id = estadoResult.rows[0].id;
 
-        const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_fin_estimada, prioridad_id, estado_inicial_id];
+        const values = [proyecto_id, objetivo_especifico_id || null, descripcion, fecha_inicio_estimada, fecha_fin_estimada, prioridad_id, estado_inicial_id];
         const { rows } = await this.dataAccess.exe('actividades_crear', values);
         return rows[0];
     }
@@ -179,72 +185,48 @@ class Project {
         const { proyecto_id } = params;
         const { empresa_id } = usuarioSesion;
     
-        // Verificamos que el proyecto exista y pertenezca a la empresa
+        // 1. Validar y obtener el proyecto principal
         const proyectoResult = await this.dataAccess.exe('proyectos_obtenerPorId', [proyecto_id, empresa_id]);
         if (proyectoResult.rowCount === 0) {
-            throw new Error('Proyecto no encontrado o no tienes permiso para verlo.');
+            throw new Error('Proyecto no encontrado o no tienes permiso.');
         }
-    
-        // Consultas para obtener todos los elementos de la jerarquía en paralelo
-        const objetivosGeneralesPromise = this.dataAccess.exe('objetivos_listarPorProyecto', [proyecto_id]);
-        const objetivosEspecificosPromise = this.dataAccess.exe('objetivosEspecificos_listarPorProyecto', [proyecto_id]);
-        const actividadesPromise = this.dataAccess.exe('actividades_listarPorProyecto', [proyecto_id]);
-        const asignacionesPromise = this.dataAccess.exe('asignaciones_listarPorProyecto', [proyecto_id]);
-    
-        const [
-            objetivosGeneralesResult,
-            objetivosEspecificosResult,
-            actividadesResult,
-            asignacionesResult
-        ] = await Promise.all([objetivosGeneralesPromise, objetivosEspecificosPromise, actividadesPromise, asignacionesPromise]);
-    
-        // --- Ensamblaje de la respuesta ---
         const proyecto = proyectoResult.rows[0];
-        const actividades = actividadesResult.rows;
-        const objetivosEspecificos = objetivosEspecificosResult.rows;
-        const objetivosGenerales = objetivosGeneralesResult.rows;
-        const asignaciones = asignacionesResult.rows;
     
-        // Agrupamos los usuarios asignados por actividad_id
+        // 2. Obtener todos los datos relacionados en paralelo
+        const [objetivosGenerales, objetivosEspecificos, actividades, asignaciones] = await Promise.all([
+            this.dataAccess.exe('objetivos_listarPorProyecto', [proyecto_id]).then(r => r.rows),
+            this.dataAccess.exe('objetivosEspecificos_listarPorProyecto', [proyecto_id]).then(r => r.rows),
+            this.dataAccess.exe('actividades_listarPorProyecto', [proyecto_id]).then(r => r.rows),
+            this.dataAccess.exe('asignaciones_listarPorProyecto', [proyecto_id]).then(r => r.rows)
+        ]);
+    
+        // 3. Crear un mapa de los usuarios asignados para búsqueda rápida
         const asignacionesMap = new Map();
         asignaciones.forEach(asig => {
-            if (!asignacionesMap.has(asig.actividad_id)) {
-                asignacionesMap.set(asig.actividad_id, []);
-            }
+            if (!asignacionesMap.has(asig.actividad_id)) asignacionesMap.set(asig.actividad_id, []);
             asignacionesMap.get(asig.actividad_id).push({
                 usuario_id: asig.usuario_id,
                 nombre_completo: `${asig.nombre} ${asig.apellido}`
             });
         });
     
-        // Agrupamos actividades por su objetivo específico
-        const actividadesMap = new Map();
-        actividades.forEach(act => {
-            act.usuarios_asignados = asignacionesMap.get(act.id) || [];
-            const key = act.objetivo_especifico_id || 'sin_objetivo';
-            if (!actividadesMap.has(key)) {
-                actividadesMap.set(key, []);
-            }
-            actividadesMap.get(key).push(act);
-        });
-    
-        // Agrupamos objetivos específicos por su objetivo general y les adjuntamos sus actividades
-        const especificosMap = new Map();
-        objetivosEspecificos.forEach(oe => {
-            oe.actividades = actividadesMap.get(oe.id) || [];
-            if (!especificosMap.has(oe.objetivo_general_id)) {
-                especificosMap.set(oe.objetivo_general_id, []);
-            }
-            especificosMap.get(oe.objetivo_general_id).push(oe);
-        });
-    
-        // Ensamblamos la estructura final
-        proyecto.objetivos_generales = objetivosGenerales.map(og => {
-            og.objetivos_especificos = especificosMap.get(og.id) || [];
-            return og;
-        });
-        
-        proyecto.actividades_sin_objetivo = actividadesMap.get('sin_objetivo') || [];
+        // 4. Ensamblar la jerarquía
+        proyecto.objetivos_generales = objetivosGenerales.map(og => ({
+            ...og,
+            objetivos_especificos: objetivosEspecificos
+                .filter(oe => oe.objetivo_general_id === og.id)
+                .map(oe => ({
+                    ...oe,
+                    actividades: actividades
+                        .filter(act => act.objetivo_especifico_id === oe.id)
+                        .map(act => ({
+                            ...act,
+                            // Añadimos aquí el array de usuarios y el nombre del primer responsable
+                            usuarios_asignados: asignacionesMap.get(act.id) || [],
+                            nombre_responsable: (asignacionesMap.get(act.id) || [{ nombre_completo: 'No asignado' }])[0].nombre_completo
+                        }))
+                }))
+        }));
     
         return proyecto;
     }
