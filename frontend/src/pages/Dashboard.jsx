@@ -10,6 +10,10 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Chart } from 'primereact/chart';
 import { Tag } from 'primereact/tag';
+import { Dialog } from 'primereact/dialog';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { Calendar } from 'primereact/calendar';
+import { Dropdown } from 'primereact/dropdown';
 
 
 
@@ -27,6 +31,20 @@ const DashboardPage = () => {
         datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#e5e7eb', '#3b82f6', '#22c55e', '#ef4444'] }]
     });
 
+    // Estados para el modal de creación de proyecto
+    const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+    const [newProjectName, setNewProjectName] = useState('');
+    const [newProjectDescription, setNewProjectDescription] = useState('');
+    const [newProjectEndDate, setNewProjectEndDate] = useState(null);
+    const [newProjectPriority, setNewProjectPriority] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const priorities = [
+        { label: 'Baja', value: '4706b812-2efb-4e45-a61d-94f1d75737cb' },
+        { label: 'Media', value: '022678f0-30ce-46a1-a011-06ee3f117caf' },
+        { label: 'Alta', value: '1817ff68-342c-4a2b-9817-c3b0f23c4ba9' },
+        { label: 'Urgente', value: 'e8d5d10c-ada3-4856-bd7b-f170f40fb2d4' },
+    ];
+
     const handleInviteSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -38,6 +56,41 @@ const DashboardPage = () => {
             toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCreateProject = async () => {
+        if (!newProjectName.trim() || !newProjectEndDate || !newProjectPriority) {
+            toast.current.show({ severity: 'warn', summary: 'Advertencia', detail: 'Nombre, fecha de fin y prioridad son requeridos.' });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const params = {
+                nombre: newProjectName,
+                descripcion: newProjectDescription,
+                fecha_fin_estimada: newProjectEndDate.toISOString().split('T')[0],
+                prioridad_id: newProjectPriority
+            };
+            
+            await rpcCall('Project', 'crear', params);
+            
+            toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Proyecto creado correctamente.' });
+            
+            setIsCreateModalVisible(false);
+            setNewProjectName('');
+            setNewProjectDescription('');
+            setNewProjectEndDate(null);
+            setNewProjectPriority(null);
+            
+            // Refrescar las actividades para mostrar el nuevo proyecto
+            fetchUserActivities();
+
+        } catch (error) {
+            console.error("Error al crear el proyecto:", error);
+            toast.current.show({ severity: 'error', summary: 'Error', detail: error.message || 'No se pudo crear el proyecto.' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -185,7 +238,9 @@ const DashboardPage = () => {
                         <p className="text-slate-500 mt-1">Bienvenido, {user?.nombre} {user?.apellido}!</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button label="Crear un proyecto" icon="pi pi-plus" onClick={() => navigate('/projects/new')} />
+                        {user && (user.nombre_rol === 'Administrador' || user.rol === 'Project Manager') && (
+                            <Button label="Crear un proyecto" icon="pi pi-plus" onClick={() => setIsCreateModalVisible(true)} />
+                        )}
                         <Button label="Ir a mis proyectos" icon="pi pi-arrow-right" className="p-button-outlined" onClick={() => navigate('/projects')} />
                     </div>
                 </div>
@@ -278,6 +333,45 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de creación de proyecto */}
+            <Dialog 
+                header="Crear Nuevo Proyecto" 
+                visible={isCreateModalVisible} 
+                style={{ width: 'min(90vw, 500px)' }} 
+                onHide={() => setIsCreateModalVisible(false)}
+                footer={
+                    <div>
+                        <Button label="Cancelar" icon="pi pi-times" onClick={() => setIsCreateModalVisible(false)} className="p-button-text" />
+                        <Button label="Guardar Proyecto" icon="pi pi-check" onClick={handleCreateProject} loading={isSubmitting} autoFocus />
+                    </div>
+                }
+                draggable={false}
+                modal
+            >
+                <div className="flex flex-column gap-4 mt-3">
+                    <div className="flex flex-column gap-2">
+                        <label htmlFor="projectName" className='font-semibold'>Nombre del Proyecto</label>
+                        <InputText id="projectName" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} autoFocus />
+                    </div>
+                    
+                    <div className="grid formgrid">
+                        <div className="col-12 md:col-6 field">
+                             <label htmlFor="projectEndDate" className='font-semibold'>Fecha de Fin Estimada</label>
+                             <Calendar id="projectEndDate" value={newProjectEndDate} onChange={(e) => setNewProjectEndDate(e.value)} dateFormat="dd/mm/yy" showIcon className="w-full" />
+                        </div>
+                        <div className="col-12 md:col-6 field">
+                            <label htmlFor="projectPriority" className='font-semibold'>Prioridad</label>
+                            <Dropdown id="projectPriority" value={newProjectPriority} onChange={(e) => setNewProjectPriority(e.value)} options={priorities} placeholder="Selecciona una prioridad" className="w-full" />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-column gap-2">
+                        <label htmlFor="projectDescription" className='font-semibold'>Descripción (Opcional)</label>
+                        <InputTextarea id="projectDescription" value={newProjectDescription} onChange={(e) => setNewProjectDescription(e.target.value)} rows={4} />
+                    </div>
+                </div>
+            </Dialog>
         </>
     );
 };

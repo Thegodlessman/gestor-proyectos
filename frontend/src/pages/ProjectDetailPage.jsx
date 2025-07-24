@@ -731,7 +731,7 @@ const ProjectDetailPage = () => {
             <Dialog header={modalConfig.title} visible={isItemModalVisible} style={{ width: 'min(90vw, 500px)' }} onHide={() => setIsItemModalVisible(false)} footer={modalFooter} modal>
                 <div className="flex flex-column gap-4 mt-3">
                     <div className="flex flex-column gap-2">
-                        <label htmlFor="itemDescription" className='font-semibold'>Descripción</label>
+                        <label htmlFor="itemDescription" className='font-semibold'>Titulo</label>
                         <InputTextarea
                             id="itemDescription"
                             value={modalConfig.data.descripcion || ''}
