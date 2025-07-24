@@ -5,9 +5,10 @@ import { rpcCall } from '../services/api';
 // PrimeReact Components
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
-import { Avatar } from 'primereact/avatar';
 import { Toast } from 'primereact/toast';
 import { FileUpload } from 'primereact/fileupload';
+
+const API_BASE_URL = 'http://localhost:3000';
 
 const ProfilePage = () => {
     const toast = useRef(null);
@@ -22,6 +23,9 @@ const ProfilePage = () => {
 
     // Loading state
     const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
+    
+    // Estado para forzar la recarga de la imagen después de subir una nueva
+    const [imageVersion, setImageVersion] = useState(Date.now());
 
     // Populate form with user data from context on mount
     useEffect(() => {
@@ -37,6 +41,24 @@ const ProfilePage = () => {
     const handleProfileInputChange = (e) => {
         const { name, value } = e.target;
         setProfileData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // URL de la imagen del usuario
+    const imageUrl = `${API_BASE_URL}/api/profile/image/${user?.id}?v=${imageVersion}`;
+
+    // Esta función se llama cuando la subida es exitosa
+    const onUpload = () => {
+        toast.current.show({ severity: 'info', summary: 'Éxito', detail: 'Imagen subida correctamente' });
+        // Cambiamos el estado para forzar la actualización de la URL de la imagen
+        setImageVersion(Date.now());
+        // También actualizamos el contexto del usuario para que se refleje en el header
+        setUser(prevUser => ({ ...prevUser, profileImageVersion: Date.now() }));
+    };
+    
+    // Esta función se llama si la subida falla
+    const onError = (e) => {
+        const response = JSON.parse(e.xhr.response);
+        toast.current.show({ severity: 'error', summary: 'Error', detail: response.message || 'No se pudo subir la imagen.' });
     };
 
     const handleProfileUpdate = async () => {
@@ -72,17 +94,26 @@ const ProfilePage = () => {
             <h1 className="text-3xl font-bold text-slate-800 mb-6">Tu perfil</h1>
 
             <div className="flex flex-column align-items-center mb-6">
-                <Avatar image={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.nombre}+${user?.apellido}&background=random`} size="xlarge" shape="circle" className="mb-3" />
+                <h3 className="text-xl font-semibold mb-4">Foto de Perfil</h3>
+                <img 
+                    src={imageUrl} 
+                    alt="Foto de perfil" 
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://www.primefaces.org/wp-content/uploads/2020/05/placeholder.png'; }}
+                    className="w-9rem h-9rem border-2 border-circle border-gray-700 shadow-4 mb-3"
+                />
                 <FileUpload 
-                    mode="basic" 
-                    name="avatar" 
-                    url="/api/user/avatar-upload" // Endpoint de ejemplo
+                    name="profileImage" // Debe coincidir con el nombre esperado por Multer
+                    url={`${API_BASE_URL}/api/profile/image`}
+                    withCredentials={true} // ¡MUY IMPORTANTE para enviar la cookie de sesión!
                     accept="image/*" 
-                    maxFileSize={1000000} 
-                    chooseLabel="Cambiar foto" 
-                    className="p-button-sm p-button-outlined"
-                    auto 
-                    onUpload={() => toast.current.show({severity: 'info', summary: 'Éxito', detail: 'Foto actualizada (simulado)'})}
+                    maxFileSize={5000000} // 5MB
+                    onUpload={onUpload}
+                    onError={onError}
+                    chooseLabel="Cambiar Foto"
+                    uploadLabel="Subir"
+                    cancelLabel="Cancelar"
+                    mode="basic" // Estilo de botón simple
+                    auto // Sube la imagen automáticamente al seleccionarla
                 />
             </div>
 

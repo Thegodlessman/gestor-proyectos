@@ -220,7 +220,12 @@ class Project {
         // Agrupamos actividades por su objetivo específico
         const actividadesMap = new Map();
         actividades.forEach(act => {
+            // Mantenemos los usuarios asignados para compatibilidad
             act.usuarios_asignados = asignacionesMap.get(act.id) || [];
+            
+            // Los datos de responsable y prioridad ya vienen de la consulta SQL actualizada
+            // No necesitamos procesamiento adicional aquí
+            
             const key = act.objetivo_especifico_id || 'sin_objetivo';
             if (!actividadesMap.has(key)) {
                 actividadesMap.set(key, []);

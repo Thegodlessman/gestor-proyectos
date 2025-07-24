@@ -10,7 +10,7 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Chart } from 'primereact/chart';
 
-import ProfileImage from '../components/ProfileImage';
+
 
 const DashboardPage = () => {
     const { user } = useAuth(); 
@@ -65,7 +65,7 @@ const DashboardPage = () => {
                     <div className="col-12 lg:col-8">
                         <div className="grid">
                             <div className="col-12 md:col-6">
-                                <Card title="Mis Tareas Urgentes" className="shadow-1 h-full">
+                                <Card title="Mis Actividades Urgentes" className="shadow-1 h-full">
                                     <ul className="list-none p-0 m-0">
                                         {urgentTasks.map((task, index) => (
                                             <li key={index} className="flex align-items-center py-3 border-bottom-1 border-gray-200">
@@ -121,8 +121,6 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
-
-            <ProfileImage />
         </>
     );
 };
