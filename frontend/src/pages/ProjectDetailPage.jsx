@@ -184,18 +184,7 @@ const ProjectDetailPage = () => {
         }
     };
 
-    const handleDelete = (node) => {
-        confirmDialog({
-            message: `¿Estás seguro de que quieres eliminar "${node.data.nombre}"?`,
-            header: 'Confirmación de Eliminación',
-            icon: 'pi pi-exclamation-triangle',
-            accept: () => {
-                if (toast.current) {
-                    toast.current.show({ severity: 'info', summary: 'Función no disponible', detail: 'La eliminación aún no está implementada en el backend.' });
-                }
-            }
-        });
-    };
+
 
     const handleInviteMember = async () => {
         if (!inviteEmail || !selectedRole) {
@@ -408,22 +397,13 @@ const ProjectDetailPage = () => {
                     />
                 )}
                 {canEdit && (
-                    <>
-                        <Button
-                            icon="pi pi-pencil"
-                            className="p-button-rounded p-button-warning p-button-icon-only"
-                            style={{ width: '2.5rem', height: '2.5rem' }}
-                            tooltip="Editar"
-                            onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
-                        />
-                        <Button
-                            icon="pi pi-trash"
-                            className="p-button-rounded p-button-danger p-button-icon-only"
-                            style={{ width: '2.5rem', height: '2.5rem' }}
-                            tooltip="Eliminar"
-                            onClick={() => handleDelete(node)}
-                        />
-                    </>
+                    <Button
+                        icon="pi pi-pencil"
+                        className="p-button-rounded p-button-warning p-button-icon-only"
+                        style={{ width: '2.5rem', height: '2.5rem' }}
+                        tooltip="Editar"
+                        onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
+                    />
                 )}
             </div>
         );
