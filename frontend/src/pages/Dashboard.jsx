@@ -10,6 +10,8 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Chart } from 'primereact/chart';
 
+import NotificationBell from '../components/NotificationBell';
+
 import ProfileImage from '../components/ProfileImage';
 
 const DashboardPage = () => {
@@ -54,6 +56,7 @@ const DashboardPage = () => {
                     <div>
                         <h1 className="text-3xl font-bold text-slate-900 m-0">Dashboard</h1>
                         <p className="text-slate-500 mt-1">Bienvenido, {user?.nombre} {user?.apellido}!</p>
+                        <NotificationBell />
                     </div>
                     <div className="flex gap-2">
                         <Button label="Crear un proyecto" icon="pi pi-plus" onClick={() => navigate('/projects/new')} />
