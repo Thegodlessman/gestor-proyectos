@@ -11,6 +11,8 @@ import createToProcessRouter from './src/routes/toProcess.routes.js';
 import securityRoutes from './src/routes/security.routes.js'
 import profileRoutes from './src/routes/profile.routes.js';
 
+import { startDeadlineChecker } from './src/jobs/deadLineChecker.js';
+
 const app = express();
 
 const startServer = async () => {
@@ -46,6 +48,7 @@ const startServer = async () => {
         const PORT = process.env.PORT || 3001;
         app.listen(PORT, () => {
             console.log(`Servidor backend corriendo en http://localhost:${PORT}`);
+            startDeadlineChecker();
         });
 
     } catch (error) {
