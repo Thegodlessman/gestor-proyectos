@@ -271,6 +271,28 @@ class Project {
         const { rows } = await this.dataAccess.exe('asignaciones_insertar', [actividad_id, usuario_id]);
         return rows[0];
     }
+    
+    async actualizarActividad(params, usuarioSesion) {
+        const { actividad_id, estado_id, progreso } = params;
+        const { id: usuario_id } = usuarioSesion;
+
+        if (!actividad_id || (!estado_id && progreso === undefined)) {
+            throw new Error('Se requiere el ID de la actividad y al menos un campo para actualizar.');
+        }
+
+        const actividadActualResult = await this.dataAccess.exe('actividades_obtenerPorId', [actividad_id]);
+        if (actividadActualResult.rowCount === 0) throw new Error('La actividad no existe.');
+        const actividadActual = actividadActualResult.rows[0];
+
+        const nuevoEstadoId = estado_id || actividadActual.estado_actividad_id;
+        const nuevoProgreso = progreso !== undefined ? progreso : actividadActual.progreso;
+
+        const { rows, rowCount } = await this.dataAccess.exe('actividades_actualizar', [nuevoEstadoId, nuevoProgreso, actividad_id, usuario_id]);
+        if (rowCount === 0) {
+            throw new Error('No se pudo actualizar la actividad. Asegúrate de ser miembro del proyecto.');
+        }
+        return rows[0];
+    }
 }
 
 export default Project;
