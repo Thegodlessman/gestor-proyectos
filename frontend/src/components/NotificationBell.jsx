@@ -43,7 +43,7 @@ const NotificationBell = () => {
     };
 
     const bellIcon = (
-        <i className="pi pi-bell p-overlay-badge" style={{ fontSize: '1.5rem' }}>
+        <i className="pi pi-bell p-overlay-badge text-black-alpha-90" style={{ fontSize: '1.5rem' }}>
             {notifications.length > 0 && <Badge value={notifications.length} severity="danger"></Badge>}
         </i>
     );
@@ -52,7 +52,7 @@ const NotificationBell = () => {
         <div>
             <Button
                 icon={bellIcon}
-                className="p-button-rounded p-button-text text-white"
+                className="p-button-rounded p-button-text"
                 aria-label="Notifications"
                 onClick={(e) => op.current.toggle(e)}
             />
@@ -67,7 +67,7 @@ const NotificationBell = () => {
                 {loading && <p>Cargando...</p>}
                 {!loading && notifications.length === 0 && <p>No tienes notificaciones nuevas.</p>}
                 {!loading && notifications.map(notif => (
-                    <div key={notif.id} className="p-2 border-bottom-1 border-gray-200">
+                    <div key={notif.id} className="p-2 border-bottom-1 border-black-200">
                         <p className="m-0">{notif.mensaje}</p>
                         <small className="text-gray-500">{new Date(notif.fecha_creacion).toLocaleString()}</small>
                     </div>

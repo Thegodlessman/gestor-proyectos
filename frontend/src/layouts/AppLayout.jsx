@@ -7,6 +7,7 @@ import { Menu } from 'primereact/menu';
 import { Button } from 'primereact/button';
 import { classNames } from 'primereact/utils';
 import logoUrl from './proyectify.svg';
+import NotificationBell from '../components/NotificationBell';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -118,6 +119,7 @@ const AppLayout = () => {
             <div className="flex-1 flex flex-column">
                 <header className="bg-white  h-16 flex justify-content-end align-items-center px-5 sticky top-0 z-10">
                     <div className="flex align-items-center gap-4">
+                        <NotificationBell />
                         <span className="font-semibold text-slate-600 hidden sm:block">
                             {user?.nombre || 'Usuario'} {user?.apellido || ''}
                         </span>
