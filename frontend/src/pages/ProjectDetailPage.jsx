@@ -46,9 +46,12 @@ const ProjectDetailPage = () => {
     // Modal states
     const [isItemModalVisible, setIsItemModalVisible] = useState(false);
     const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
+    const [isAssignMemberModalVisible, setIsAssignMemberModalVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState({ mode: 'create', type: '', title: '', data: {} });
     const [inviteEmail, setInviteEmail] = useState('');
     const [selectedRole, setSelectedRole] = useState(null);
+    const [selectedActivityForAssign, setSelectedActivityForAssign] = useState(null);
+    const [selectedMemberToAssign, setSelectedMemberToAssign] = useState(null);
 
     // Sidebar state
     const [isDetailSidebarVisible, setIsDetailSidebarVisible] = useState(false);
@@ -517,6 +520,15 @@ const ProjectDetailPage = () => {
                         onClick={() => openDetailSidebar(node.data)}
                     />
                 )}
+                {canEdit && node.data.type === 'Actividad' && (
+                    <Button
+                        icon="pi pi-user-plus"
+                        className="p-button-rounded p-button-secondary p-button-icon-only"
+                        style={{ width: '2.5rem', height: '2.5rem' }}
+                        tooltip="Asignar Miembro"
+                        onClick={() => openAssignMemberModal(node.data)}
+                    />
+                )}
                 {canEdit && node.data.type !== 'Actividad' && (
                     <Button
                         icon="pi pi-plus"
@@ -524,15 +536,6 @@ const ProjectDetailPage = () => {
                         style={{ width: '2.5rem', height: '2.5rem' }}
                         tooltip={`Añadir ${nextType === 'oe' ? 'Obj. Específico' : 'Actividad'}`}
                         onClick={() => openItemModal('create', nextType, node)}
-                    />
-                )}
-                {canEdit && (
-                    <Button
-                        icon="pi pi-pencil"
-                        className="p-button-rounded p-button-warning p-button-icon-only"
-                        style={{ width: '2.5rem', height: '2.5rem' }}
-                        tooltip="Editar"
-                        onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
                     />
                 )}
             </div>
