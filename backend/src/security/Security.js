@@ -1,10 +1,13 @@
 import dataAccess from '../data/DataAccess.js';
 import { formatError, formatResponse } from '../utils/response.util.js';
 
+let securityInstanceRef; 
+
 class Security {
     constructor() {
         this.permissionMap = new Map();
         this.boInstances = new Map(); 
+        securityInstanceRef = this; 
     }
 
     /**
@@ -88,4 +91,11 @@ class Security {
     }
 }
 
-export default Security;
+export const updateSecurityCache = () => {
+    if (securityInstanceRef) {
+        return securityInstanceRef.loadAllPermissions();
+    }
+};
+
+const securityInstance = new Security();
+export default securityInstance;

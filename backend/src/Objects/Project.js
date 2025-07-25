@@ -317,6 +317,24 @@ class Project {
         
         return rows[0];
     }
+
+    async eliminarMiembro(params, usuarioSesion) {
+        const { proyecto_id, usuario_id } = params;
+        if (!proyecto_id || !usuario_id) {
+            throw new Error('Se requiere el ID del proyecto y el ID del usuario.');
+        }
+        
+        // La consulta segura verifica que el proyecto pertenezca a la empresa del admin
+        const { rowCount } = await this.dataAccess.exe('proyecto_usuarios_eliminarMiembro', 
+            [proyecto_id, usuario_id, usuarioSesion.empresa_id]
+        );
+    
+        if (rowCount === 0) {
+            throw new Error('No se encontró la asignación del miembro o no tienes permiso para eliminarla.');
+        }
+    
+        return { message: 'Miembro eliminado del proyecto exitosamente.' };
+    }
 }
 
 export default Project;

@@ -340,7 +340,6 @@ const ProjectDetailPage = () => {
         }
     };
 
-
     const openDetailSidebar = (activityData) => {
         setSelectedActivity(activityData);
         setIsDetailSidebarVisible(true);
@@ -392,20 +391,63 @@ const ProjectDetailPage = () => {
     };
 
     const handleRemoveMember = (member) => {
+        console.log('Member data:', member); // Debug: ver estructura de datos
+        console.log('All members:', members); // Debug: ver todos los miembros
+        
         confirmDialog({
-            message: `¿Estás seguro de que quieres eliminar a ${member.nombre_usuario} del proyecto?`,
+            message: `¿Estás seguro de que quieres eliminar a ${member.nombre} ${member.apellido || ''} del proyecto?`,
             header: 'Confirmar Eliminación',
             icon: 'pi pi-exclamation-triangle',
             accept: async () => {
                 try {
-                    await rpcCall('Project', 'eliminarMiembro', {
-                        proyecto_id: id,
-                        usuario_id: member.usuario_id
+                    // Intentar con usuario_id primero, luego con id si no existe
+                    const userId = member.usuario_id || member.id;
+                    const proyectoId = id; // Mantener como string UUID, no convertir a entero
+                    
+                    console.log('Sending request:', {
+                        proyecto_id: proyectoId,
+                        usuario_id: userId,
+                        memberObject: member
+                    }); // Debug
+                    
+                    if (!userId || !proyectoId) {
+                        throw new Error('Faltan datos requeridos: usuario_id o proyecto_id');
+                    }
+                    
+                    const result = await rpcCall('Project', 'eliminarMiembro', {
+                        proyecto_id: proyectoId, // Enviar como UUID string
+                        usuario_id: userId // Enviar como UUID string
                     });
-                    if (toast.current) toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Miembro eliminado.' });
-                    fetchDropdownData(); // Refrescar lista
+                    
+                    console.log('Elimination result:', result); // Debug
+                    
+                    if (toast.current) {
+                        toast.current.show({ 
+                            severity: 'success', 
+                            summary: 'Éxito', 
+                            detail: 'Miembro eliminado correctamente del proyecto.' 
+                        });
+                    }
+                    
+                    // Refrescar lista de miembros
+                    await fetchDropdownData();
+                    
                 } catch (err) {
-                    if (toast.current) toast.current.show({ severity: 'error', summary: 'Error', detail: err.message || 'No se pudo eliminar al miembro.' });
+                    console.error('Error eliminando miembro:', err); // Debug
+                    console.error('Error details:', {
+                        message: err.message,
+                        stack: err.stack,
+                        member: member,
+                        projectId: id
+                    });
+                    
+                    if (toast.current) {
+                        toast.current.show({ 
+                            severity: 'error', 
+                            summary: 'Error', 
+                            detail: err.message || 'No se pudo eliminar al miembro del proyecto.' 
+                        });
+                    }
                 }
             }
         });
