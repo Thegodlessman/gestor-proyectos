@@ -46,9 +46,12 @@ const ProjectDetailPage = () => {
     // Modal states
     const [isItemModalVisible, setIsItemModalVisible] = useState(false);
     const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
+    const [isAssignMemberModalVisible, setIsAssignMemberModalVisible] = useState(false);
     const [modalConfig, setModalConfig] = useState({ mode: 'create', type: '', title: '', data: {} });
     const [inviteEmail, setInviteEmail] = useState('');
     const [selectedRole, setSelectedRole] = useState(null);
+    const [selectedActivityForAssign, setSelectedActivityForAssign] = useState(null);
+    const [selectedMemberToAssign, setSelectedMemberToAssign] = useState(null);
 
     // Sidebar state
     const [isDetailSidebarVisible, setIsDetailSidebarVisible] = useState(false);
@@ -286,6 +289,56 @@ const ProjectDetailPage = () => {
         }
     };
 
+    const openAssignMemberModal = (activityData) => {
+        setSelectedActivityForAssign(activityData);
+        setSelectedMemberToAssign(null);
+        setIsAssignMemberModalVisible(true);
+    };
+
+    const handleAssignMember = async () => {
+        if (!selectedActivityForAssign || !selectedMemberToAssign) {
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'warn', 
+                    summary: 'Campos requeridos', 
+                    detail: 'Por favor, selecciona un miembro para asignar.' 
+                });
+            }
+            return;
+        }
+
+        try {
+            await rpcCall('Project', 'assignUser', {
+                actividad_id: selectedActivityForAssign.id,
+                usuario_id: selectedMemberToAssign
+            });
+
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'success', 
+                    summary: 'Éxito', 
+                    detail: 'Miembro asignado a la actividad correctamente.' 
+                });
+            }
+
+            // Refrescar los datos del proyecto
+            await fetchProjectDetails();
+            
+            // Cerrar el modal
+            setIsAssignMemberModalVisible(false);
+            setSelectedActivityForAssign(null);
+            setSelectedMemberToAssign(null);
+
+        } catch (err) {
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'error', 
+                    summary: 'Error', 
+                    detail: err.message || 'No se pudo asignar el miembro a la actividad.' 
+                });
+            }
+        }
+    };
 
     const openDetailSidebar = (activityData) => {
         setSelectedActivity(activityData);
@@ -338,20 +391,63 @@ const ProjectDetailPage = () => {
     };
 
     const handleRemoveMember = (member) => {
+        console.log('Member data:', member); // Debug: ver estructura de datos
+        console.log('All members:', members); // Debug: ver todos los miembros
+        
         confirmDialog({
-            message: `¿Estás seguro de que quieres eliminar a ${member.nombre_usuario} del proyecto?`,
+            message: `¿Estás seguro de que quieres eliminar a ${member.nombre} ${member.apellido || ''} del proyecto?`,
             header: 'Confirmar Eliminación',
             icon: 'pi pi-exclamation-triangle',
             accept: async () => {
                 try {
-                    await rpcCall('Project', 'eliminarMiembro', {
-                        proyecto_id: id,
-                        usuario_id: member.usuario_id
+                    // Intentar con usuario_id primero, luego con id si no existe
+                    const userId = member.usuario_id || member.id;
+                    const proyectoId = id; // Mantener como string UUID, no convertir a entero
+                    
+                    console.log('Sending request:', {
+                        proyecto_id: proyectoId,
+                        usuario_id: userId,
+                        memberObject: member
+                    }); // Debug
+                    
+                    if (!userId || !proyectoId) {
+                        throw new Error('Faltan datos requeridos: usuario_id o proyecto_id');
+                    }
+                    
+                    const result = await rpcCall('Project', 'eliminarMiembro', {
+                        proyecto_id: proyectoId, // Enviar como UUID string
+                        usuario_id: userId // Enviar como UUID string
                     });
-                    if (toast.current) toast.current.show({ severity: 'success', summary: 'Éxito', detail: 'Miembro eliminado.' });
-                    fetchDropdownData(); // Refrescar lista
+                    
+                    console.log('Elimination result:', result); // Debug
+                    
+                    if (toast.current) {
+                        toast.current.show({ 
+                            severity: 'success', 
+                            summary: 'Éxito', 
+                            detail: 'Miembro eliminado correctamente del proyecto.' 
+                        });
+                    }
+                    
+                    // Refrescar lista de miembros
+                    await fetchDropdownData();
+                    
                 } catch (err) {
-                    if (toast.current) toast.current.show({ severity: 'error', summary: 'Error', detail: err.message || 'No se pudo eliminar al miembro.' });
+                    console.error('Error eliminando miembro:', err); // Debug
+                    console.error('Error details:', {
+                        message: err.message,
+                        stack: err.stack,
+                        member: member,
+                        projectId: id
+                    });
+                    
+                    if (toast.current) {
+                        toast.current.show({ 
+                            severity: 'error', 
+                            summary: 'Error', 
+                            detail: err.message || 'No se pudo eliminar al miembro del proyecto.' 
+                        });
+                    }
                 }
             }
         });
@@ -428,6 +524,11 @@ const ProjectDetailPage = () => {
     };
 
     const responsibleBodyTemplate = (node) => {
+        // Solo mostrar responsable para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        
         if (!node.data.nombre_responsable) {
             return (
                 <div className="flex align-items-center gap-2 opacity-50">
@@ -450,6 +551,11 @@ const ProjectDetailPage = () => {
     };
 
     const priorityBodyTemplate = (node) => {
+        // Solo mostrar prioridad para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        
         // Verificar si hay prioridad disponible (puede estar en diferentes campos)
         const prioridad = node.data.nombre_prioridad || node.data.prioridad;
         if (!prioridad) return null;
@@ -464,7 +570,13 @@ const ProjectDetailPage = () => {
         return <Tag value={prioridad} severity={p.severity} icon={`pi ${p.icon}`} />;
     };
 
-    const statusBodyTemplate = (node) => <Tag value={node.data.estado || 'N/A'} severity={getSeverity(node.data.estado)} />;
+    const statusBodyTemplate = (node) => {
+        // Solo mostrar estado para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        return <Tag value={node.data.estado || 'N/A'} severity={getSeverity(node.data.estado)} />;
+    };
 
     const progressBodyTemplate = (node) => {
         const progress = node.data.progreso || 0;
@@ -517,6 +629,15 @@ const ProjectDetailPage = () => {
                         onClick={() => openDetailSidebar(node.data)}
                     />
                 )}
+                {canEdit && node.data.type === 'Actividad' && (
+                    <Button
+                        icon="pi pi-user-plus"
+                        className="p-button-rounded p-button-secondary p-button-icon-only"
+                        style={{ width: '2.5rem', height: '2.5rem' }}
+                        tooltip="Asignar Miembro"
+                        onClick={() => openAssignMemberModal(node.data)}
+                    />
+                )}
                 {canEdit && node.data.type !== 'Actividad' && (
                     <Button
                         icon="pi pi-plus"
@@ -524,15 +645,6 @@ const ProjectDetailPage = () => {
                         style={{ width: '2.5rem', height: '2.5rem' }}
                         tooltip={`Añadir ${nextType === 'oe' ? 'Obj. Específico' : 'Actividad'}`}
                         onClick={() => openItemModal('create', nextType, node)}
-                    />
-                )}
-                {canEdit && (
-                    <Button
-                        icon="pi pi-pencil"
-                        className="p-button-rounded p-button-warning p-button-icon-only"
-                        style={{ width: '2.5rem', height: '2.5rem' }}
-                        tooltip="Editar"
-                        onClick={() => toast.current.show({ severity: 'info', summary: 'Próximamente', detail: `La edición no está implementada en el backend.` })}
                     />
                 )}
             </div>
@@ -654,7 +766,13 @@ const ProjectDetailPage = () => {
                     />
                     <Column
                         header="Fecha Límite"
-                        body={(node) => formatDate(node.data.fecha_fin_estimada)}
+                        body={(node) => {
+                            // Solo mostrar fecha límite para actividades
+                            if (node.data.type !== 'Actividad') {
+                                return null;
+                            }
+                            return formatDate(node.data.fecha_fin_estimada);
+                        }}
                         style={{ width: '12%' }}
                         pt={{
                             headerCell: {
@@ -815,6 +933,62 @@ const ProjectDetailPage = () => {
                             <Dropdown value={selectedRole} onChange={(e) => setSelectedRole(e.value)} options={roles} placeholder="Selecciona un rol" className="w-full sm:w-15rem" />
                             <Button label="Añadir" onClick={handleInviteMember} />
                         </div>
+                    </div>
+                </div>
+            </Dialog>
+
+            <Dialog 
+                header={`Asignar Miembro a: ${selectedActivityForAssign?.descripcion || ''}`} 
+                visible={isAssignMemberModalVisible} 
+                style={{ width: 'min(90vw, 500px)' }} 
+                onHide={() => setIsAssignMemberModalVisible(false)} 
+                modal
+                footer={
+                    <div>
+                        <Button 
+                            label="Cancelar" 
+                            icon="pi pi-times" 
+                            onClick={() => setIsAssignMemberModalVisible(false)} 
+                            className="p-button-text" 
+                        />
+                        <Button 
+                            label="Asignar" 
+                            icon="pi pi-check" 
+                            onClick={handleAssignMember} 
+                            autoFocus 
+                        />
+                    </div>
+                }
+            >
+                <div className="flex flex-column gap-4 mt-3">
+                    <div className="flex align-items-center gap-3 p-3 bg-blue-50 border-round-md">
+                        <i className="pi pi-check-square text-blue-600 text-xl"></i>
+                        <div>
+                            <div className="font-semibold text-blue-800">Actividad seleccionada:</div>
+                            <div className="text-blue-700">{selectedActivityForAssign?.descripcion}</div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-column gap-2">
+                        <label htmlFor="memberSelect" className="font-semibold">
+                            Seleccionar Miembro del Proyecto
+                        </label>
+                        <Dropdown
+                            id="memberSelect"
+                            value={selectedMemberToAssign}
+                            onChange={(e) => setSelectedMemberToAssign(e.value)}
+                            options={members.map(member => ({
+                                label: `${member.nombre} ${member.apellido} (${member.nombre_rol_proyecto})`,
+                                value: member.id
+                            }))}
+                            placeholder="Selecciona un miembro para asignar"
+                            className="w-full"
+                            filter
+                            showClear
+                        />
+                        <small className="text-gray-600">
+                            Solo se muestran los miembros actuales del proyecto
+                        </small>
                     </div>
                 </div>
             </Dialog>
