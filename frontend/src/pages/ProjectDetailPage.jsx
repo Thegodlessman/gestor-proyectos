@@ -524,6 +524,11 @@ const ProjectDetailPage = () => {
     };
 
     const responsibleBodyTemplate = (node) => {
+        // Solo mostrar responsable para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        
         if (!node.data.nombre_responsable) {
             return (
                 <div className="flex align-items-center gap-2 opacity-50">
@@ -546,6 +551,11 @@ const ProjectDetailPage = () => {
     };
 
     const priorityBodyTemplate = (node) => {
+        // Solo mostrar prioridad para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        
         // Verificar si hay prioridad disponible (puede estar en diferentes campos)
         const prioridad = node.data.nombre_prioridad || node.data.prioridad;
         if (!prioridad) return null;
@@ -560,7 +570,13 @@ const ProjectDetailPage = () => {
         return <Tag value={prioridad} severity={p.severity} icon={`pi ${p.icon}`} />;
     };
 
-    const statusBodyTemplate = (node) => <Tag value={node.data.estado || 'N/A'} severity={getSeverity(node.data.estado)} />;
+    const statusBodyTemplate = (node) => {
+        // Solo mostrar estado para actividades
+        if (node.data.type !== 'Actividad') {
+            return null;
+        }
+        return <Tag value={node.data.estado || 'N/A'} severity={getSeverity(node.data.estado)} />;
+    };
 
     const progressBodyTemplate = (node) => {
         const progress = node.data.progreso || 0;
@@ -750,7 +766,13 @@ const ProjectDetailPage = () => {
                     />
                     <Column
                         header="Fecha Límite"
-                        body={(node) => formatDate(node.data.fecha_fin_estimada)}
+                        body={(node) => {
+                            // Solo mostrar fecha límite para actividades
+                            if (node.data.type !== 'Actividad') {
+                                return null;
+                            }
+                            return formatDate(node.data.fecha_fin_estimada);
+                        }}
                         style={{ width: '12%' }}
                         pt={{
                             headerCell: {
