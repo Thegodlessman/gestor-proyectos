@@ -289,6 +289,57 @@ const ProjectDetailPage = () => {
         }
     };
 
+    const openAssignMemberModal = (activityData) => {
+        setSelectedActivityForAssign(activityData);
+        setSelectedMemberToAssign(null);
+        setIsAssignMemberModalVisible(true);
+    };
+
+    const handleAssignMember = async () => {
+        if (!selectedActivityForAssign || !selectedMemberToAssign) {
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'warn', 
+                    summary: 'Campos requeridos', 
+                    detail: 'Por favor, selecciona un miembro para asignar.' 
+                });
+            }
+            return;
+        }
+
+        try {
+            await rpcCall('Project', 'assignUser', {
+                actividad_id: selectedActivityForAssign.id,
+                usuario_id: selectedMemberToAssign
+            });
+
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'success', 
+                    summary: 'Éxito', 
+                    detail: 'Miembro asignado a la actividad correctamente.' 
+                });
+            }
+
+            // Refrescar los datos del proyecto
+            await fetchProjectDetails();
+            
+            // Cerrar el modal
+            setIsAssignMemberModalVisible(false);
+            setSelectedActivityForAssign(null);
+            setSelectedMemberToAssign(null);
+
+        } catch (err) {
+            if (toast.current) {
+                toast.current.show({ 
+                    severity: 'error', 
+                    summary: 'Error', 
+                    detail: err.message || 'No se pudo asignar el miembro a la actividad.' 
+                });
+            }
+        }
+    };
+
 
     const openDetailSidebar = (activityData) => {
         setSelectedActivity(activityData);
@@ -818,6 +869,62 @@ const ProjectDetailPage = () => {
                             <Dropdown value={selectedRole} onChange={(e) => setSelectedRole(e.value)} options={roles} placeholder="Selecciona un rol" className="w-full sm:w-15rem" />
                             <Button label="Añadir" onClick={handleInviteMember} />
                         </div>
+                    </div>
+                </div>
+            </Dialog>
+
+            <Dialog 
+                header={`Asignar Miembro a: ${selectedActivityForAssign?.descripcion || ''}`} 
+                visible={isAssignMemberModalVisible} 
+                style={{ width: 'min(90vw, 500px)' }} 
+                onHide={() => setIsAssignMemberModalVisible(false)} 
+                modal
+                footer={
+                    <div>
+                        <Button 
+                            label="Cancelar" 
+                            icon="pi pi-times" 
+                            onClick={() => setIsAssignMemberModalVisible(false)} 
+                            className="p-button-text" 
+                        />
+                        <Button 
+                            label="Asignar" 
+                            icon="pi pi-check" 
+                            onClick={handleAssignMember} 
+                            autoFocus 
+                        />
+                    </div>
+                }
+            >
+                <div className="flex flex-column gap-4 mt-3">
+                    <div className="flex align-items-center gap-3 p-3 bg-blue-50 border-round-md">
+                        <i className="pi pi-check-square text-blue-600 text-xl"></i>
+                        <div>
+                            <div className="font-semibold text-blue-800">Actividad seleccionada:</div>
+                            <div className="text-blue-700">{selectedActivityForAssign?.descripcion}</div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-column gap-2">
+                        <label htmlFor="memberSelect" className="font-semibold">
+                            Seleccionar Miembro del Proyecto
+                        </label>
+                        <Dropdown
+                            id="memberSelect"
+                            value={selectedMemberToAssign}
+                            onChange={(e) => setSelectedMemberToAssign(e.value)}
+                            options={members.map(member => ({
+                                label: `${member.nombre} ${member.apellido} (${member.nombre_rol_proyecto})`,
+                                value: member.id
+                            }))}
+                            placeholder="Selecciona un miembro para asignar"
+                            className="w-full"
+                            filter
+                            showClear
+                        />
+                        <small className="text-gray-600">
+                            Solo se muestran los miembros actuales del proyecto
+                        </small>
                     </div>
                 </div>
             </Dialog>
