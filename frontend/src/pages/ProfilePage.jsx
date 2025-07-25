@@ -72,7 +72,7 @@ const ProfilePage = () => {
                 nombre: profileData.nombre,
                 apellido: profileData.apellido,
             };
-            await rpcCall('user.actualizarPerfil', params);
+            await rpcCall('User', 'actualizarPerfil', params);
 
             // Update user in context to reflect changes globally
             setUser(prevUser => ({ ...prevUser, ...profileData }));

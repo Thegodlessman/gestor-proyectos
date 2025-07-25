@@ -73,6 +73,21 @@ class User {
         const { rows } = await this.dataAccess.exe('usuarios_listarVerificadosPorEmpresa', [empresa_id]);
         return rows;
     }
+
+    async actualizarPerfil(params, usuarioSesion) {
+        const { nombre, apellido } = params;
+        const { id: usuario_id } = usuarioSesion;
+    
+        if (!nombre || !apellido) {
+            throw new Error('El nombre y el apellido son requeridos.');
+        }
+    
+        const { rows } = await this.dataAccess.exe('perfiles_actualizarNombre', 
+            [nombre, apellido, usuario_id]
+        );
+    
+        return rows[0];
+    }
 }
 
 export default User;
