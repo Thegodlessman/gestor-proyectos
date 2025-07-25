@@ -4,7 +4,7 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 
 import dataAccess from './src/data/DataAccess.js'; 
-import Security from './src/security/Security.js'; 
+import security from './src/security/Security.js'; 
 
 import authRoutes from './src/routes/auth.routes.js';
 import createToProcessRouter from './src/routes/toProcess.routes.js';
@@ -17,7 +17,6 @@ const app = express();
 
 const startServer = async () => {
     try {
-        const security = new Security();
 
         await security.loadAllPermissions();
 
